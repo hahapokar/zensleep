@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="ZenSleep" />
+    <meta name="theme-color" content="#0f172a" />
+    <meta name="description" content="个性化睡眠调理系统 - 中医体质评估、症状选择、脑波音乐、语音导语，帮助您获得深度睡眠" />
+    <meta name="keywords" content="睡眠,中医,脑波,放松,冥想" />
+    <meta property="og:title" content="ZenSleep - 个性化睡眠调理系统" />
+    <meta property="og:description" content="结合中医体质理论的智能睡眠辅助系统" />
+    <meta property="og:type" content="website" />
+    
+    <title>ZenSleep - 个性化睡眠调理系统</title>
+    
+    <!-- 禁用缩放和调整大小 -->
+    <style>
+      html, body {
+        width: 100%;
+        height: 100%;
+        margin: 0;
+        padding: 0;
+        overflow: hidden;
+        -webkit-user-select: none;
+        user-select: none;
+        -webkit-touch-callout: none;
+      }
+      
+      body {
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
+        background: #0f172a;
+        color: #e2e8f0;
+      }
+      
+      /* 防止 iOS 缩放 */
+      input, select, textarea {
+        font-size: 16px !important;
+      }
+      
+      #root {
+        width: 100%;
+        height: 100%;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>
+
