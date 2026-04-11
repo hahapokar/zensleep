@@ -11,7 +11,7 @@
     "lint": "tsc --noEmit",
     "deploy": "npm run build && git add dist -f && git commit -m 'Deploy to GitHub Pages' && git push origin $(git branch --show-current):gh-pages --force"
   },
-  "homepage": "https://patricknao.github.io/zensleep",
+  "homepage": "https://hahapokar.github.io/zensleep",
   "dependencies": {
     "@google/genai": "^1.29.0",
     "@tailwindcss/vite": "^4.1.14",
