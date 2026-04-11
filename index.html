@@ -2,39 +2,50 @@
 <html lang="zh-CN">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no, maximum-scale=1.0" />
+    
+    <meta name="mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
     <meta name="apple-mobile-web-app-title" content="ZenSleep" />
-    <meta name="theme-color" content="#0f172a" />
-    <meta name="description" content="个性化睡眠调理系统 - 中医体质评估、症状选择、脑波音乐、语音导语，帮助您获得深度睡眠" />
-    <meta name="keywords" content="睡眠,中医,脑波,放松,冥想" />
-    <meta property="og:title" content="ZenSleep - 个性化睡眠调理系统" />
-    <meta property="og:description" content="结合中医体质理论的智能睡眠辅助系统" />
+    
+    <meta name="theme-color" content="#000000" />
+    
+    <meta name="description" content="ZenSleep 智能中草药助眠系统 - 重塑三分之一的人生" />
+    <meta name="keywords" content="睡眠,中草药,脑波,ZenSleep,助眠" />
+    
+    <meta property="og:title" content="ZenSleep - 智能助眠系统" />
+    <meta property="og:description" content="药香、脑波、三十分钟深度诱导" />
     <meta property="og:type" content="website" />
     
-    <title>ZenSleep - 个性化睡眠调理系统</title>
+    <title>ZenSleep | 智能中草药助眠系统</title>
     
-    <!-- 禁用缩放和调整大小 -->
     <style>
+      /* 极致沉浸式基础样式 */
       html, body {
         width: 100%;
         height: 100%;
         margin: 0;
         padding: 0;
+        background: #000000; /* 强制背景全黑，保护褪黑素 */
+        color: #e2e8f0;
         overflow: hidden;
+        
+        /* 禁用所有可能干扰睡眠的操作 */
         -webkit-user-select: none;
         user-select: none;
         -webkit-touch-callout: none;
+        -webkit-tap-highlight-color: transparent;
+        touch-action: none;
       }
       
       body {
-        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
-        background: #0f172a;
-        color: #e2e8f0;
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Helvetica Neue', Arial, sans-serif;
+        display: flex;
+        flex-direction: column;
       }
       
-      /* 防止 iOS 缩放 */
+      /* 防止 iOS 输入框自动缩放 */
       input, select, textarea {
         font-size: 16px !important;
       }
@@ -42,6 +53,16 @@
       #root {
         width: 100%;
         height: 100%;
+        display: flex;
+        flex-direction: column;
+      }
+
+      /* 针对刘海屏的适配 */
+      @supports (padding: env(safe-area-inset-top)) {
+        #root {
+          padding-top: env(safe-area-inset-top);
+          padding-bottom: env(safe-area-inset-bottom);
+        }
       }
     </style>
     <script type="module" crossorigin src="/zensleep/assets/index-BBvgGMvs.js"></script>
@@ -51,4 +72,3 @@
     <div id="root"></div>
   </body>
 </html>
-
