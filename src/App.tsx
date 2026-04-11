@@ -5,6 +5,7 @@ import { audioEngine } from './lib/AudioEngine';
 import { initializeAzureTTS, AzureTTS } from './lib/AzureTTS';
 import { ContentManager, ContentConfig } from './lib/ContentManager';
 import { ScriptManager } from './data/scripts';
+import { SymptomType } from './data/symptoms/index';
 import InitialChoice from './components/InitialChoice';
 import UserProfile from './components/UserProfile';
 import SymptomSelector from './components/SymptomSelector';
@@ -18,7 +19,7 @@ type AppStage =
   | 'OFF';
 
 interface UserConfig {
-  mode: 'standard' | 'personalized';
+  mode: 'nsdr' | 'sleep';
   constitution?: string;
   symptoms: string[];
   contentConfig?: ContentConfig;
@@ -27,7 +28,7 @@ interface UserConfig {
 export default function ZenSleepApp() {
   const [appStage, setAppStage] = useState<AppStage>('INITIAL_CHOICE');
   const [userConfig, setUserConfig] = useState<UserConfig>({
-    mode: 'standard',
+    mode: 'sleep',
     symptoms: [],
   });
   const [azureTTS, setAzureTTS] = useState<AzureTTS | null>(null);
@@ -45,15 +46,17 @@ export default function ZenSleepApp() {
   }, []);
 
   // 处理初始选择
-  const handleModeSelect = (mode: 'standard' | 'personalized') => {
-    if (mode === 'standard') {
+  const handleModeSelect = (mode: 'nsdr' | 'sleep') => {
+    if (mode === 'nsdr') {
+      // NSDR模式：直接使用nsdr脚本
       setUserConfig({
-        mode: 'standard',
-        symptoms: [],
-        contentConfig: ContentManager.generateContentConfig('balanced', []),
+        mode: 'nsdr',
+        symptoms: ['nsdr'],
+        contentConfig: ContentManager.generateContentConfig('balanced', ['nsdr']),
       });
       setAppStage('SESSION_PREP');
     } else {
+      // 睡眠模式：进入体质选择流程
       setAppStage('USER_PROFILE');
     }
   };
@@ -150,7 +153,7 @@ export default function ZenSleepApp() {
       const stage1Scripts = ScriptManager.getCustomizedScript(
         config.scriptSequence[0],
         userConfig.constitution,
-        userConfig.symptoms[0]
+        userConfig.symptoms[0] as SymptomType
       );
       for (const text of stage1Scripts) {
         await speak(text);
@@ -164,7 +167,7 @@ export default function ZenSleepApp() {
       const stage2Scripts = ScriptManager.getCustomizedScript(
         config.scriptSequence[1],
         userConfig.constitution,
-        userConfig.symptoms[0]
+        userConfig.symptoms[0] as SymptomType
       );
       for (const text of stage2Scripts) {
         await speak(text);
@@ -236,13 +239,12 @@ export default function ZenSleepApp() {
       <AnimatePresence mode="wait">
         {/* 初始选择 */}
         {appStage === 'INITIAL_CHOICE' && (
-          <InitialChoice key="initial" onModeSelect={handleModeSelect} />
+          <InitialChoice onModeSelect={handleModeSelect} />
         )}
 
         {/* 体质问卷 */}
         {appStage === 'USER_PROFILE' && (
           <UserProfile
-            key="profile"
             onConstitutionSelect={handleConstitutionSelect}
             onBack={() => setAppStage('INITIAL_CHOICE')}
           />
@@ -251,7 +253,6 @@ export default function ZenSleepApp() {
         {/* 症状选择 */}
         {appStage === 'SYMPTOM_SELECTOR' && (
           <SymptomSelector
-            key="symptoms"
             onSymptomsSelect={handleSymptomsSelect}
             onBack={() => setAppStage('USER_PROFILE')}
           />
@@ -349,7 +350,7 @@ export default function ZenSleepApp() {
                 transition={{ delay: 2 }}
                 onClick={() => {
                   setAppStage('INITIAL_CHOICE');
-                  setUserConfig({ mode: 'standard', symptoms: [] });
+                  setUserConfig({ mode: 'sleep', symptoms: [] });
                 }}
                 className="mt-8 px-6 py-2 rounded-lg border border-slate-700 text-slate-500 text-xs hover:text-slate-300 transition-colors"
               >

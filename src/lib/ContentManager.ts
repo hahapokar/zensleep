@@ -2,8 +2,9 @@
  * 内容管理器 - 处理脚本、音乐和资源文件的映射
  */
 
-import { ScriptManager, SCRIPTS } from './scripts';
-import { CONSTITUTIONS, SYMPTOMS } from './constitutions';
+import { ScriptManager, SCRIPTS } from '../data/scripts';
+import { CONSTITUTIONS, SYMPTOMS } from '../data/constitutions';
+import { SymptomType } from '../data/symptoms/index';
 
 export interface ContentConfig {
   constitution: string;
@@ -33,6 +34,10 @@ export class ContentManager {
       sessionDuration = 4200; // 70 分钟给难以入睡
     } else if (symptoms.includes('nightmare')) {
       sessionDuration = 5400; // 90 分钟给梦魇
+    } else if (symptoms.includes('nsdr')) {
+      sessionDuration = 1800; // 30 分钟给NSDR
+    } else if (symptoms.includes('sleep')) {
+      sessionDuration = 1200; // 20 分钟给睡眠引导
     }
 
     // 添加症状额外时长
@@ -66,36 +71,20 @@ export class ContentManager {
     constitution: string,
     symptoms: string[]
   ): string[] {
-    const sequence: string[] = [];
-
-    // 1. 开场白
+    // 如果有症状，使用第一个症状对应的推荐序列
     if (symptoms.length > 0) {
-      // 根据症状选择开场
-      const symptomScriptMap: Record<string, string> = {
-        insomnia: 'insomnia_intro',
-        anxious: 'anxious_intro',
-        tired: 'tired_intro',
-        nightmare: 'nightmare_intro',
-        wakeability: 'wakeability_intro',
-        'stress-relief': 'stress_relief_intro',
-      };
-      
-      const symptomKey = symptoms[0];
-      sequence.push(symptomScriptMap[symptomKey] || 'welcome_standard');
-    } else {
-      sequence.push('welcome_standard');
+      const primarySymptom = symptoms[0];
+      // 检查是否是有效的 SymptomType
+      const validSymptoms: SymptomType[] = ['insomnia', 'anxious', 'tired', 'nightmare', 'wakeability', 'stress-relief', 'general', 'nsdr', 'sleep'];
+      if (validSymptoms.includes(primarySymptom as SymptomType)) {
+        return ScriptManager.getRecommendedScriptSequence(primarySymptom as SymptomType);
+      } else {
+        console.warn(`Unknown symptom: ${primarySymptom}, falling back to general`);
+      }
     }
 
-    // 2. 深化阶段
-    sequence.push('deepening_standard');
-
-    // 3. 呼吸同步
-    sequence.push('breathing_sync');
-
-    // 4. 唤醒（仅在会话结束时）
-    // sequence.push('awakening'); // 这个会在会话结束时单独调用
-
-    return sequence;
+    // 默认使用通用序列
+    return ScriptManager.getRecommendedScriptSequence('general');
   }
 
   /**
@@ -109,6 +98,8 @@ export class ContentManager {
       nightmare: '/music/peaceful_delta.mp3',
       wakeability: '/music/deep_protection.mp3',
       'stress-relief': '/music/meditation_flow.mp3',
+      nsdr: '/music/meditation_flow.mp3',
+      sleep: '/music/brainwave_delta.mp3',
     };
 
     // 默认背景音乐

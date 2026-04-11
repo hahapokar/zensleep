@@ -55,7 +55,7 @@ export default function UserProfile({ onConstitutionSelect, onBack }: UserProfil
     },
   ];
 
-  const constitutionMappings: Record<number, Record<string, string>> = {
+  const constitutionMappings: Record<number, Record<QuestionKey, string>> = {
     0: { fatigue: 'balanced', temperature: 'balanced', moisture: 'balanced', mood: 'balanced', digestion: 'balanced' },
     1: { fatigue: 'qi-deficient', temperature: 'yang-deficient', moisture: 'phlegm-damp', mood: 'depressed-mood', digestion: 'qi-deficient' },
     2: { fatigue: 'qi-deficient', temperature: 'yang-deficient', moisture: 'damp', mood: 'anxious', digestion: 'yang-deficient' },
@@ -70,7 +70,7 @@ export default function UserProfile({ onConstitutionSelect, onBack }: UserProfil
   const analyzeConstitution = (): string => {
     const scores: Record<string, number> = {};
     Object.entries(answers).forEach(([key, value]) => {
-      if (value !== null) {
+      if (value !== null && typeof value === 'number' && value >= 0 && value <= 2) {
         const constitutionId = constitutionMappings[value][key as QuestionKey];
         scores[constitutionId] = (scores[constitutionId] || 0) + 1;
       }
