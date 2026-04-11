@@ -9,7 +9,8 @@
     "preview": "vite preview",
     "clean": "rm -rf dist",
     "lint": "tsc --noEmit",
-    "deploy": "npm run build && git add dist -f && git commit -m 'Deploy to GitHub Pages' && git push origin $(git branch --show-current):gh-pages --force"
+    "predeploy": "npm run build",
+    "deploy": "gh-pages -d dist"
   },
   "homepage": "https://hahapokar.github.io/zensleep",
   "dependencies": {
@@ -30,6 +31,7 @@
     "@types/react": "^19.2.14",
     "@types/react-dom": "^19.2.3",
     "autoprefixer": "^10.4.21",
+    "gh-pages": "^6.3.0",
     "tailwindcss": "^4.1.14",
     "tsx": "^4.21.0",
     "typescript": "~5.8.2",
