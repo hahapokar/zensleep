@@ -5,7 +5,7 @@ import { defineConfig } from 'vite';
 
 export default defineConfig({
   // 强制写死仓库名路径，确保打包出来的 index.html 指向 /zensleep/assets/...
-  base: '/zensleep/', 
+   base: '/zensleep/',  
   
   plugins: [react(), tailwindcss()],
   resolve: {

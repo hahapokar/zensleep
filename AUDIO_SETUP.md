@@ -23,11 +23,11 @@ public/
 
 | 文件名 | 时长 | 用途 |
 |--------|------|-----|
-| `sleep-clear-mind.mp3` | 20分钟 | 清脑 - 帮助大脑停止转动 |
-| `sleep-relax-body.mp3` | 20分钟 | 舒体 - 缓解身体疲劳 |
-| `sleep-calm-heart.mp3` | 20分钟 | 定心 - 提供心理安全感 |
-| `sleep-cool-down.mp3` | 20分钟 | 降温 - 降低情绪亢奋 |
-| `sleep-serene.mp3` | 20分钟 | 静谧 - 宁静背景音 |
+| `sleep-clear-mind.mp3` | 30分钟 | 清脑 - 帮助大脑停止转动 |
+| `sleep-relax-body.mp3` | 30分钟 | 舒体 - 缓解身体疲劳 |
+| `sleep-calm-heart.mp3` | 30分钟 | 定心 - 提供心理安全感 |
+| `sleep-cool-down.mp3` | 60分钟 | 降温 - 降低情绪亢奋 |
+| `sleep-serene.mp3` | 60分钟 | 静谧 - 宁静背景音 |
 
 ## 📤 如何上传音频
 
