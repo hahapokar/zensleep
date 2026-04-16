@@ -10,8 +10,11 @@ export class AudioEngine {
   private brainwaveOsc: OscillatorNode | null = null;
   private brainwaveLfo: OscillatorNode | null = null;
   private brainwaveGain: GainNode | null = null;
+  private audioElement: HTMLAudioElement | null = null;
   
-  private baseVolume: number = 0.12; 
+  private baseVolume: number = 0.12;
+  private isPaused: boolean = false;
+  private pausedVolume: number = 0; 
 
   private async init() {
     if (this.audioCtx) {
@@ -117,14 +120,70 @@ export class AudioEngine {
     }
   }
 
+  public pause() {
+    if (!this.masterGain || !this.audioCtx || this.isPaused) return;
+    this.isPaused = true;
+    this.pausedVolume = this.masterGain.gain.value;
+    this.masterGain.gain.setTargetAtTime(0, this.audioCtx.currentTime, 0.5);
+    if (this.audioElement) {
+      this.audioElement.pause();
+    }
+  }
+
+  public resume() {
+    if (!this.masterGain || !this.audioCtx || !this.isPaused) return;
+    this.isPaused = false;
+    this.masterGain.gain.setTargetAtTime(this.pausedVolume, this.audioCtx.currentTime, 0.5);
+    if (this.audioElement) {
+      this.audioElement.play().catch(console.error);
+    }
+  }
+
+  public async playAudioFile(audioPath: string): Promise<void> {
+    return new Promise((resolve, reject) => {
+      this.audioElement = new Audio(audioPath);
+      this.audioElement.volume = this.baseVolume;
+      
+      this.audioElement.addEventListener('ended', () => {
+        resolve();
+      });
+      
+      this.audioElement.addEventListener('error', (e) => {
+        reject(new Error(`Failed to load audio file: ${audioPath}`));
+      });
+      
+      this.audioElement.play().catch(reject);
+    });
+  }
+
   public terminate() {
-    if (!this.masterGain || !this.audioCtx) return;
-    const now = this.audioCtx.currentTime;
-    // 超长淡出，确保不惊醒
-    this.masterGain.gain.linearRampToValueAtTime(0, now + 15);
-    setTimeout(() => {
-      this.audioCtx?.close().then(() => { this.audioCtx = null; });
-    }, 16000);
+    if (this.brainwaveOsc) {
+      this.brainwaveOsc.stop();
+    }
+    if (this.brainwaveLfo) {
+      this.brainwaveLfo.stop();
+    }
+    if (this.pinkNoiseSource) {
+      this.pinkNoiseSource.stop();
+    }
+    if (this.audioElement) {
+      this.audioElement.pause();
+      this.audioElement = null;
+    }
+    if (this.masterGain) {
+      this.masterGain.gain.value = 0;
+    }
+    if (this.audioCtx) {
+      this.audioCtx.close();
+    }
+    this.audioCtx = null;
+    this.masterGain = null;
+    this.lowpassFilter = null;
+    this.panner = null;
+    this.pinkNoiseSource = null;
+    this.brainwaveOsc = null;
+    this.brainwaveLfo = null;
+    this.brainwaveGain = null;
   }
 }
 export const audioEngine = new AudioEngine();

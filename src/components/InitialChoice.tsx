@@ -55,7 +55,7 @@ export default function InitialChoice({ onModeSelect }: InitialChoiceProps) {
             <div className="text-left space-y-2">
               <h3 className="text-slate-100 font-semibold text-lg">NSDR 非睡眠放松</h3>
               <p className="text-slate-400 text-sm">
-                进行非睡眠深度放松练习，帮助您在清醒状态下获得深度放松和冥想体验
+                白天进行非睡眠深度放松练习，帮助您在清醒状态下获得深度放松和冥想体验
               </p>
               <div className="flex items-center gap-2 text-emerald-400 text-sm mt-3">
                 <span>开始放松</span>
@@ -84,7 +84,7 @@ export default function InitialChoice({ onModeSelect }: InitialChoiceProps) {
                 <h3 className="text-slate-100 font-semibold text-lg">进入睡眠</h3>
               </div>
               <p className="text-slate-400 text-sm">
-                进入深度睡眠模式，通过引导语和环境音效帮助您快速入睡并获得优质睡眠
+                夜晚进入深度睡眠模式，通过引导语和环境音效帮助您快速入睡并获得优质睡眠
               </p>
               <div className="flex items-center gap-2 text-emerald-400 text-sm mt-3">
                 <span>开始入睡</span>
@@ -101,7 +101,7 @@ export default function InitialChoice({ onModeSelect }: InitialChoiceProps) {
           transition={{ duration: 0.6, delay: 0.6 }}
           className="text-center text-slate-500 text-xs pt-4"
         >
-          <p>提示：您可以随时返回更改设置</p>
+          <p></p>
         </motion.div>
       </motion.div>
 
