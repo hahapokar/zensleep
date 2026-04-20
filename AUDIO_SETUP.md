@@ -6,7 +6,8 @@
 public/
 └── audio/
     ├── nsdr/          # NSDR非睡眠放松模式音频
-    └── sleep/         # 进入睡眠模式音频
+    ├── sleep/         # 进入睡眠模式音频（仅30分钟选项）
+    └── music/         # 纯背景音乐助眠音频
 ```
 
 ## 🎵 所需的音频文件
@@ -15,19 +16,25 @@ public/
 
 | 文件名 | 时长 | 用途 |
 |--------|------|-----|
-| `nsdr-power-recharge.mp3` | 15分钟 | 能量补给 - 快速缓解眼部疲劳 |
+| `nsdr-power-recharge.mp3` | 10分钟 | 能量补给 - 快速缓解眼部疲劳 |
 | `nsdr-stress-reset.mp3` | 20分钟 | 压力归零 - 降低焦虑水平 |
 | `nsdr-deep-recovery.mp3` | 30分钟 | 深度修复 - 完整睡眠周期模拟 |
 
-### 睡眠模式音频 (`public/audio/sleep/`)
+### 睡眠模式音频 (`public/audio/sleep/`) - 仅保留30分钟选项
 
 | 文件名 | 时长 | 用途 |
 |--------|------|-----|
-| `sleep-clear-mind.mp3` | 30分钟 | 清脑 - 帮助大脑停止转动 |
-| `sleep-relax-body.mp3` | 30分钟 | 舒体 - 缓解身体疲劳 |
-| `sleep-calm-heart.mp3` | 30分钟 | 定心 - 提供心理安全感 |
-| `sleep-cool-down.mp3` | 60分钟 | 降温 - 降低情绪亢奋 |
-| `sleep-serene.mp3` | 60分钟 | 静谧 - 宁静背景音 |
+| `sleep-clear-mind.mp3` | 30分钟 | 清脑 · 卸载繁杂 - 帮助大脑停止转动 |
+| `sleep-relax-body.mp3` | 30分钟 | 舒体 · 融化酸累 - 缓解身体疲劳 |
+| `sleep-calm-heart.mp3` | 30分钟 | 定心 · 安全避风港 - 提供心理安全感 |
+
+### 纯背景音乐助眠 (`public/audio/music/`) - 新增
+
+| 文件名 | 时长 | 用途 |
+|--------|------|-----|
+| `music-light.mp3` | 20分钟 | 轻盈 · 柔和伴眠 - 轻柔背景音乐，快速入眠 |
+| `music-balanced.mp3` | 40分钟 | 平和 · 舒适陪伴 - 平衡背景音乐，深度放松 |
+| `music-deep.mp3` | 60分钟 | 深度 · 完整睡眠 - 深沉背景音乐，整晚安眠 |
 
 ## 📤 如何上传音频
 
@@ -40,9 +47,18 @@ public/
 ```bash
 # NSDR音频
 cp /path/to/nsdr/power-recharge.mp3 public/audio/nsdr/nsdr-power-recharge.mp3
+cp /path/to/nsdr/stress-reset.mp3 public/audio/nsdr/nsdr-stress-reset.mp3
+cp /path/to/nsdr/deep-recovery.mp3 public/audio/nsdr/nsdr-deep-recovery.mp3
 
-# 睡眠音频
+# 睡眠音频（仅30分钟）
 cp /path/to/sleep/clear-mind.mp3 public/audio/sleep/sleep-clear-mind.mp3
+cp /path/to/sleep/relax-body.mp3 public/audio/sleep/sleep-relax-body.mp3
+cp /path/to/sleep/calm-heart.mp3 public/audio/sleep/sleep-calm-heart.mp3
+
+# 背景音乐（新增）
+cp /path/to/music/light.mp3 public/audio/music/music-light.mp3
+cp /path/to/music/balanced.mp3 public/audio/music/music-balanced.mp3
+cp /path/to/music/deep.mp3 public/audio/music/music-deep.mp3
 ```
 
 ### 选项 2：生产环境部署
@@ -53,18 +69,35 @@ cp /path/to/sleep/clear-mind.mp3 public/audio/sleep/sleep-clear-mind.mp3
 ## 🔗 音频文件加载原理
 
 应用使用相对路径加载音频文件：
-- **开发环境**：`/audio/nsdr/nsdr-power-recharge.mp3`
-- **生产环境**：`/zensleep/audio/nsdr/nsdr-power-recharge.mp3`
+- **开发环境**：`/audio/nsdr/nsdr-power-recharge.mp3`、`/audio/sleep/sleep-clear-mind.mp3`、`/audio/music/music-light.mp3`
+- **生产环境**：`/zensleep/audio/nsdr/nsdr-power-recharge.mp3`、`/zensleep/audio/sleep/sleep-clear-mind.mp3`、`/zensleep/audio/music/music-light.mp3`
 
 > 注意：生产环境路径基于 `vite.config.ts` 中的 `base: '/zensleep/'` 配置
 
 ## ✅ 检查清单
 
-- [ ] `public/audio/nsdr/` 文件夹包含3个MP3文件
-- [ ] `public/audio/sleep/` 文件夹包含5个MP3文件
+### NSDR音频 (3个文件)
+- [ ] `public/audio/nsdr/nsdr-power-recharge.mp3` (10分钟)
+- [ ] `public/audio/nsdr/nsdr-stress-reset.mp3` (20分钟)
+- [ ] `public/audio/nsdr/nsdr-deep-recovery.mp3` (30分钟)
+
+### 睡眠音频 (3个文件，仅30分钟)
+- [ ] `public/audio/sleep/sleep-clear-mind.mp3` (30分钟)
+- [ ] `public/audio/sleep/sleep-relax-body.mp3` (30分钟)
+- [ ] `public/audio/sleep/sleep-calm-heart.mp3` (30分钟)
+
+### 背景音乐 (3个文件)
+- [ ] `public/audio/music/music-light.mp3` (20分钟)
+- [ ] `public/audio/music/music-balanced.mp3` (40分钟)
+- [ ] `public/audio/music/music-deep.mp3` (60分钟)
+
+**总计：9个MP3文件**
+
+### 通用检查
 - [ ] 所有文件命名完全匹配上面的文件名
 - [ ] 音频文件格式为MP3
 - [ ] 音频时长符合要求
+- [ ] 文件不被.gitignore忽略
 
 ## 🐛 常见问题
 

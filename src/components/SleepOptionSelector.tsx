@@ -28,18 +28,6 @@ const SLEEP_OPTIONS: SleepOption[] = [
     description: '提供心理安全感，抚平焦虑。适合内心不安、需要情感支持的用户',
     target: '内心焦虑、受挫、需要心理安全感的用户',
   },
-  {
-    id: 'cool-down',
-    name: '降温 · 抚平兴奋 (60分钟)',
-    description: '降低情绪亢奋，帮助平静入睡。适合刚结束工作、情绪高涨的用户',
-    target: '刷手机太久、刚开完会、情绪亢奋的用户',
-  },
-  {
-    id: 'serene',
-    name: '静谧 · 日常入梦 (60分钟)',
-    description: '提供宁静背景音，辅助自然入睡。适合状态正常、需要背景音的用户',
-    target: '状态正常，只是需要一个背景音入睡的用户',
-  },
 ];
 
 interface SleepOptionSelectorProps {
@@ -63,12 +51,12 @@ export default function SleepOptionSelector({
   };
 
   return (
-    <div className="fixed inset-0 bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 flex items-center justify-center p-6 overflow-y-auto">
+    <div className="fixed inset-0 bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 flex items-center justify-center p-4 overflow-y-auto">
       <motion.div
         initial={{ opacity: 0, scale: 0.95 }}
         animate={{ opacity: 1, scale: 1 }}
         transition={{ duration: 0.6 }}
-        className="w-full max-w-2xl"
+        className="w-full max-w-3xl"
       >
         {/* 返回按钮 */}
         {onBack && (
@@ -100,7 +88,7 @@ export default function SleepOptionSelector({
           </div>
 
           {/* 选项网格 */}
-          <div className="grid grid-cols-1 gap-4">
+          <div className="space-y-3 max-h-[calc(100vh-400px)] overflow-y-auto px-1">
             {SLEEP_OPTIONS.map((option, index) => (
               <motion.button
                 key={option.id}
@@ -110,7 +98,7 @@ export default function SleepOptionSelector({
                 whileHover={{ scale: 1.02 }}
                 whileTap={{ scale: 0.98 }}
                 onClick={() => handleOptionSelect(option.id)}
-                className={`p-6 rounded-lg border-2 text-left transition-all ${
+                className={`p-4 rounded-lg border-2 text-left transition-all ${
                   selectedOption === option.id
                     ? 'border-emerald-400 bg-emerald-400/10'
                     : 'border-slate-700 bg-slate-800/30 hover:border-emerald-400/50'
@@ -128,9 +116,9 @@ export default function SleepOptionSelector({
                       <Check size={16} className="text-slate-900" />
                     )}
                   </div>
-                  <div className="flex-1">
+                  <div className="flex-1 min-w-0">
                     <h3
-                      className={`font-medium text-lg ${
+                      className={`font-medium text-base leading-tight ${
                         selectedOption === option.id
                           ? 'text-emerald-100'
                           : 'text-slate-200'
@@ -138,11 +126,8 @@ export default function SleepOptionSelector({
                     >
                       {option.name}
                     </h3>
-                    <p className="text-slate-400 text-sm mt-1">
+                    <p className="text-slate-400 text-xs mt-1 leading-relaxed line-clamp-2">
                       {option.description}
-                    </p>
-                    <p className="text-slate-400 text-sm mt-1">
-                      针对：{option.target}
                     </p>
                   </div>
                 </div>

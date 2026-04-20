@@ -4,7 +4,7 @@
  */
 
 // 脚本类型定义
-export type SymptomType = 'nsdr' | 'sleep';
+export type SymptomType = 'nsdr' | 'sleep' | 'music';
 
 export interface SymptomScript {
   key: string;
@@ -47,7 +47,7 @@ const NSDR_SCRIPTS: Record<string, SymptomScript> = {
   },
 };
 
-// 睡眠脚本定义
+// 睡眠脚本定义（仅保留三个30分钟选项）
 const SLEEP_SCRIPTS: Record<string, SymptomScript> = {
   'sleep-clear-mind': {
     key: 'sleep-clear-mind',
@@ -70,19 +70,30 @@ const SLEEP_SCRIPTS: Record<string, SymptomScript> = {
     duration: 1800, // 30分钟
     emotion: 'warm',
   },
-  'sleep-cool-down': {
-    key: 'sleep-cool-down',
-    title: '降温 · 抚平兴奋',
-    content: ['降低情绪亢奋，帮助平静入睡'],
-    duration: 3600, // 60分钟
+};
+
+// 背景音乐助眠脚本定义
+const MUSIC_SCRIPTS: Record<string, SymptomScript> = {
+  'music-light': {
+    key: 'music-light',
+    title: '轻盈 · 柔和伴眠',
+    content: ['轻柔的背景音乐，适合快速入眠'],
+    duration: 1200, // 20分钟
     emotion: 'calm',
   },
-  'sleep-serene': {
-    key: 'sleep-serene',
-    title: '静谧 · 日常入梦',
-    content: ['提供宁静背景音，辅助自然入睡'],
-    duration: 3600, // 60分钟
+  'music-balanced': {
+    key: 'music-balanced',
+    title: '平和 · 舒适陪伴',
+    content: ['平衡的背景音乐，适合深度放松'],
+    duration: 2400, // 40分钟
     emotion: 'soothing',
+  },
+  'music-deep': {
+    key: 'music-deep',
+    title: '深度 · 完整睡眠',
+    content: ['深沉的背景音乐，助力整晚安眠'],
+    duration: 3600, // 60分钟
+    emotion: 'warm',
   },
 };
 
@@ -90,6 +101,7 @@ const SLEEP_SCRIPTS: Record<string, SymptomScript> = {
 export const SCRIPTS: Record<string, SymptomScript> = {
   ...NSDR_SCRIPTS,
   ...SLEEP_SCRIPTS,
+  ...MUSIC_SCRIPTS,
 };
 
 /**
@@ -104,6 +116,8 @@ export class ScriptManager {
       return NSDR_SCRIPTS[scriptKey] || null;
     } else if (symptom === 'sleep') {
       return SLEEP_SCRIPTS[scriptKey] || null;
+    } else if (symptom === 'music') {
+      return MUSIC_SCRIPTS[scriptKey] || null;
     }
     return null;
   }
@@ -119,7 +133,7 @@ export class ScriptManager {
     let script: SymptomScript | null = null;
 
     // 如果指定了症状，从对应症状的脚本中查找
-    if (symptom && (symptom === 'nsdr' || symptom === 'sleep')) {
+    if (symptom && (symptom === 'nsdr' || symptom === 'sleep' || symptom === 'music')) {
       script = this.getScriptBySymptomAndKey(symptom as SymptomType, scriptKey);
     }
 

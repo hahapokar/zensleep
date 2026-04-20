@@ -18,6 +18,7 @@ export default function ZenSleepSession({
 }: ZenSleepSessionProps) {
   const [isPaused, setIsPaused] = useState(false);
   const [showUI, setShowUI] = useState(false);
+  const [volume, setVolume] = useState(audioEngine.getVolume());
   const [wakeLock, setWakeLock] = useState<WakeLockSentinel | null>(null);
   const uiTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
@@ -61,6 +62,12 @@ export default function ZenSleepSession({
     if (!isPaused) audioEngine.pause();
     else audioEngine.resume();
     setIsPaused(!isPaused);
+  };
+
+  const handleVolumeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const newVolume = parseFloat(e.currentTarget.value);
+    setVolume(newVolume);
+    audioEngine.setVolume(newVolume);
   };
 
   return (
@@ -145,6 +152,24 @@ export default function ZenSleepSession({
               <span className="text-slate-300">{formatTime(displayCurrent)}</span>
               <span className="mx-2 opacity-30">/</span>
               <span>{formatTime(displayTotal)}</span>
+            </div>
+
+            {/* 音量控制条 */}
+            <div className="flex items-center gap-3 pt-4">
+              <span className="text-slate-500 text-xs">🔊</span>
+              <input
+                type="range"
+                min="0"
+                max="1"
+                step="0.01"
+                value={volume}
+                onChange={handleVolumeChange}
+                className="flex-1 h-1 bg-slate-800 rounded-full appearance-none cursor-pointer accent-emerald-500"
+                style={{
+                  background: `linear-gradient(to right, rgb(16, 185, 129) 0%, rgb(16, 185, 129) ${volume * 100}%, rgb(30, 41, 59) ${volume * 100}%, rgb(30, 41, 59) 100%)`
+                }}
+              />
+              <span className="text-slate-500 text-xs w-8 text-right">{Math.round(volume * 100)}%</span>
             </div>
           </motion.div>
         )}

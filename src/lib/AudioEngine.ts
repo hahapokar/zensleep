@@ -10,11 +10,14 @@ export class AudioEngine {
   private brainwaveOsc: OscillatorNode | null = null;
   private brainwaveLfo: OscillatorNode | null = null;
   private brainwaveGain: GainNode | null = null;
+  private pinkNoiseGain: GainNode | null = null;
   private audioElement: HTMLAudioElement | null = null;
   
   private baseVolume: number = 0.12;
   private isPaused: boolean = false;
-  private pausedVolume: number = 0; 
+  private pausedVolume: number = 0;
+  private pausedBrainwaveVolume: number = 0;
+  private pausedNoiseVolume: number = 0; 
 
   private async init() {
     if (this.audioCtx) {
@@ -24,18 +27,23 @@ export class AudioEngine {
     const AudioContextClass = (window as any).AudioContext || (window as any).webkitAudioContext;
     this.audioCtx = new AudioContextClass();
     
-    this.masterGain = this.audioCtx.createGain();
-    this.masterGain.connect(this.audioCtx.destination);
+    this.masterGain = this.audioCtx!.createGain();
+    this.masterGain.connect(this.audioCtx!.destination);
     // 初始音量为 0，用于 fadeIn
     this.masterGain.gain.value = 0;
 
-    this.lowpassFilter = this.audioCtx.createBiquadFilter();
+    this.lowpassFilter = this.audioCtx!.createBiquadFilter();
     this.lowpassFilter.type = 'lowpass';
     this.lowpassFilter.frequency.value = 800; // 初始较明亮，方便导引
     
-    this.panner = this.audioCtx.createStereoPanner();
+    this.panner = this.audioCtx!.createStereoPanner();
     this.panner.connect(this.lowpassFilter);
     this.lowpassFilter.connect(this.masterGain);
+
+    // 为粉红噪音添加单独的增益节点，便于暂停时控制
+    this.pinkNoiseGain = this.audioCtx!.createGain();
+    this.pinkNoiseGain.gain.value = 1.0;
+    this.pinkNoiseGain.connect(this.panner);
   }
 
   // 背景音避让，增加 3 秒平滑度
@@ -43,6 +51,26 @@ export class AudioEngine {
     if (!this.masterGain || !this.audioCtx) return;
     const targetVol = isSpeaking ? this.baseVolume * 0.3 : this.baseVolume;
     this.masterGain.gain.setTargetAtTime(targetVol, this.audioCtx.currentTime, 3.0);
+  }
+
+  // 音量控制方法
+  public setVolume(volume: number) {
+    // volume 范围: 0-1
+    this.baseVolume = Math.max(0, Math.min(1, volume));
+    
+    // 如果有MP3音频，直接控制其音量
+    if (this.audioElement) {
+      this.audioElement.volume = this.baseVolume;
+    }
+    
+    // 如果有音频管道且未暂停，更新masterGain
+    if (this.masterGain && this.audioCtx && !this.isPaused) {
+      this.masterGain.gain.setTargetAtTime(this.baseVolume, this.audioCtx.currentTime, 0.3);
+    }
+  }
+
+  public getVolume(): number {
+    return this.baseVolume;
   }
 
   public async startAudioPipeline() {
@@ -68,7 +96,7 @@ export class AudioEngine {
     this.pinkNoiseSource = ctx.createBufferSource();
     this.pinkNoiseSource.buffer = buffer;
     this.pinkNoiseSource.loop = true;
-    this.pinkNoiseSource.connect(this.panner!);
+    this.pinkNoiseSource.connect(this.pinkNoiseGain!);
     this.pinkNoiseSource.start();
 
     // 2. 启动脑波 (初始 Alpha 10Hz)
@@ -121,34 +149,79 @@ export class AudioEngine {
   }
 
   public pause() {
+    // 如果正在播放MP3，直接暂停它
+    if (this.audioElement && !this.audioElement.paused) {
+      this.audioElement.pause();
+      this.isPaused = true;
+      return;
+    }
+
+    // 处理音频管道暂停
     if (!this.masterGain || !this.audioCtx || this.isPaused) return;
     this.isPaused = true;
+    
+    // 保存当前音量
     this.pausedVolume = this.masterGain.gain.value;
-    this.masterGain.gain.setTargetAtTime(0, this.audioCtx.currentTime, 0.5);
-    if (this.audioElement) {
-      this.audioElement.pause();
+    this.pausedBrainwaveVolume = this.brainwaveGain?.gain.value ?? 0;
+    this.pausedNoiseVolume = this.pinkNoiseGain?.gain.value ?? 1.0;
+    
+    // 淡出所有音频
+    const now = this.audioCtx.currentTime;
+    this.masterGain.gain.setTargetAtTime(0, now, 0.5);
+    if (this.brainwaveGain) {
+      this.brainwaveGain.gain.setTargetAtTime(0, now, 0.5);
+    }
+    if (this.pinkNoiseGain) {
+      this.pinkNoiseGain.gain.setTargetAtTime(0, now, 0.5);
     }
   }
 
   public resume() {
+    // 如果正在播放MP3且是暂停状态，恢复播放
+    if (this.audioElement && this.audioElement.paused && this.isPaused) {
+      this.audioElement.play().catch(console.error);
+      this.isPaused = false;
+      return;
+    }
+
+    // 处理音频管道恢复
     if (!this.masterGain || !this.audioCtx || !this.isPaused) return;
     this.isPaused = false;
-    this.masterGain.gain.setTargetAtTime(this.pausedVolume, this.audioCtx.currentTime, 0.5);
-    if (this.audioElement) {
-      this.audioElement.play().catch(console.error);
+    
+    // 淡入恢复音量
+    const now = this.audioCtx.currentTime;
+    this.masterGain.gain.setTargetAtTime(this.pausedVolume, now, 0.5);
+    if (this.brainwaveGain) {
+      this.brainwaveGain.gain.setTargetAtTime(this.pausedBrainwaveVolume, now, 0.5);
+    }
+    if (this.pinkNoiseGain) {
+      this.pinkNoiseGain.gain.setTargetAtTime(this.pausedNoiseVolume, now, 0.5);
     }
   }
 
   public async playAudioFile(audioPath: string): Promise<void> {
     return new Promise((resolve, reject) => {
+      // MP3 播放时降低背景音，避免混合噪音
+      if (this.masterGain && this.audioCtx) {
+        this.masterGain.gain.setTargetAtTime(0, this.audioCtx.currentTime, 1.0);
+      }
+
       this.audioElement = new Audio(audioPath);
-      this.audioElement.volume = this.baseVolume;
+      this.audioElement.volume = this.baseVolume; // 使用当前的音量设置
       
       this.audioElement.addEventListener('ended', () => {
+        // MP3 播放结束后恢复背景音
+        if (this.masterGain && this.audioCtx) {
+          this.masterGain.gain.setTargetAtTime(this.baseVolume, this.audioCtx.currentTime, 1.0);
+        }
         resolve();
       });
       
       this.audioElement.addEventListener('error', (e) => {
+        // 错误时也恢复背景音
+        if (this.masterGain && this.audioCtx) {
+          this.masterGain.gain.setTargetAtTime(this.baseVolume, this.audioCtx.currentTime, 1.0);
+        }
         reject(new Error(`Failed to load audio file: ${audioPath}`));
       });
       
@@ -184,6 +257,7 @@ export class AudioEngine {
     this.brainwaveOsc = null;
     this.brainwaveLfo = null;
     this.brainwaveGain = null;
+    this.pinkNoiseGain = null;
   }
 }
 export const audioEngine = new AudioEngine();

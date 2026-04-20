@@ -1,9 +1,9 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { Moon, Settings, ArrowRight } from 'lucide-react';
+import { Moon, Settings, ArrowRight, Music } from 'lucide-react';
 
 interface InitialChoiceProps {
-  onModeSelect: (mode: 'nsdr' | 'sleep') => void;
+  onModeSelect: (mode: 'nsdr' | 'sleep' | 'music') => void;
 }
 
 export default function InitialChoice({ onModeSelect }: InitialChoiceProps) {
@@ -88,6 +88,35 @@ export default function InitialChoice({ onModeSelect }: InitialChoiceProps) {
               </p>
               <div className="flex items-center gap-2 text-emerald-400 text-sm mt-3">
                 <span>开始入睡</span>
+                <ArrowRight size={16} />
+              </div>
+            </div>
+          </motion.button>
+
+          {/* 音乐助眠 */}
+          <motion.button
+            initial={{ opacity: 0, x: -20 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ duration: 0.5, delay: 0.6 }}
+            whileHover={{ scale: 1.02 }}
+            whileTap={{ scale: 0.98 }}
+            onClick={() => handleModeSelect('music')}
+            className={`w-full p-6 rounded-lg border-2 transition-all duration-300 ${
+              selectedMode === 'music'
+                ? 'border-emerald-400 bg-emerald-400/10'
+                : 'border-slate-700 bg-slate-800/50 hover:border-emerald-400/50'
+            }`}
+          >
+            <div className="text-left space-y-2">
+              <div className="flex items-center gap-2 mb-1">
+                <Music size={18} className="text-emerald-400" />
+                <h3 className="text-slate-100 font-semibold text-lg">音乐助眠</h3>
+              </div>
+              <p className="text-slate-400 text-sm">
+                纯背景音乐陪伴，无语音引导，让温柔的音乐帮助您放松身心、轻松入眠
+              </p>
+              <div className="flex items-center gap-2 text-emerald-400 text-sm mt-3">
+                <span>开始聆听</span>
                 <ArrowRight size={16} />
               </div>
             </div>
