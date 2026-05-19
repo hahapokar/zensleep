@@ -15,12 +15,11 @@ type AppStage =
   | 'SLEEP_OPTION_SELECTOR'
   | 'MUSIC_DURATION_SELECTOR'
   | 'SESSION_PREP'
-  | 'ZENSLEEP'
-  | 'OFF';
+  | 'ZENSLEEP';
 
 interface UserConfig {
   mode: 'nsdr' | 'sleep' | 'music';
-  duration?: number; 
+  duration?: number;
   sleepOption?: string;
   musicOption?: string;
   contentConfig?: ContentConfig;
@@ -30,134 +29,246 @@ export default function ZenSleepApp() {
   const [appStage, setAppStage] = useState<AppStage>('INITIAL_CHOICE');
   const [userConfig, setUserConfig] = useState<UserConfig>({ mode: 'sleep' });
   const [sessionProgress, setSessionProgress] = useState(0);
-  const [isSessionActive, setIsSessionActive] = useState(false);
-  
+  const [isScreenOn, setIsScreenOn] = useState(true);
+  const [isPlaybackStarted, setIsPlaybackStarted] = useState(false);
+  const [isPlaying, setIsPlaying] = useState(false);
+  const screenTimerRef = useRef<NodeJS.Timeout | null>(null);
   const timerRef = useRef<NodeJS.Timeout | null>(null);
+  const wakeLockRef = useRef<WakeLockSentinel | null>(null);
 
-  // 清理计时器
-  const clearTimer = () => {
-    if (timerRef.current) {
-      clearInterval(timerRef.current);
-      timerRef.current = null;
-    }
+  // --- 全屏 ---
+  const enterFullscreen = async () => {
+    try {
+      await document.documentElement.requestFullscreen();
+    } catch (e) {}
   };
 
-  // 退出会话
-  const handleExitSession = () => {
-    clearTimer();
+  const exitFullscreen = () => {
+    try {
+      if (document.fullscreenElement) document.exitFullscreen();
+    } catch (e) {}
+  };
+
+  // --- 屏幕常亮锁（播放时保持不息屏，结束立刻释放）---
+  const requestWakeLock = useCallback(async () => {
+    try {
+      if ('wakeLock' in navigator) {
+        wakeLockRef.current = await navigator.wakeLock.request('screen');
+      }
+    } catch (e) {}
+  }, []);
+
+  const releaseWakeLock = useCallback(() => {
+    try {
+      if (wakeLockRef.current) wakeLockRef.current.release();
+    } catch (e) {}
+  }, []);
+
+  // --- 自动熄屏（5秒黑）---
+  const startScreenAutoOff = useCallback(() => {
+    if (screenTimerRef.current) clearTimeout(screenTimerRef.current);
+    setIsScreenOn(true);
+    screenTimerRef.current = setTimeout(() => setIsScreenOn(false), 5000);
+  }, []);
+
+  const handleTapScreen = useCallback(() => {
+    startScreenAutoOff();
+  }, [startScreenAutoOff]);
+
+  // --- 彻底清理所有资源 ---
+  const resetSession = useCallback(() => {
+    if (timerRef.current) clearInterval(timerRef.current);
+    if (screenTimerRef.current) clearTimeout(screenTimerRef.current);
+    timerRef.current = null;
+    screenTimerRef.current = null;
+
+    audioEngine.stop();
     audioEngine.terminate();
-    setIsSessionActive(false);
-    setSessionProgress(0);
-    setAppStage('INITIAL_CHOICE');
-  };
 
-  // 选择模式
+    releaseWakeLock();
+    exitFullscreen();
+
+    setSessionProgress(0);
+    setIsScreenOn(true);
+    setIsPlaybackStarted(false);
+    setIsPlaying(false);
+  }, [releaseWakeLock]);
+
+  const finishSession = useCallback(() => {
+    if (timerRef.current) clearInterval(timerRef.current);
+    if (screenTimerRef.current) clearTimeout(screenTimerRef.current);
+    timerRef.current = null;
+    screenTimerRef.current = null;
+
+    audioEngine.stop();
+    audioEngine.terminate();
+
+    releaseWakeLock();
+    exitFullscreen();
+
+    setSessionProgress(100);
+    setIsScreenOn(false);
+    setIsPlaybackStarted(false);
+    setIsPlaying(false);
+  }, [releaseWakeLock]);
+
+  // --- 退出会话（手动）---
+  const handleExitSession = useCallback(() => {
+    resetSession();
+    setAppStage('INITIAL_CHOICE');
+  }, [resetSession]);
+
+  // --- 拖动进度条 ---
+  const handleSeekProgress = useCallback((progress: number) => {
+    if (!userConfig.contentConfig) return;
+    const total = userConfig.contentConfig.sessionDuration;
+    const seekTime = (progress / 100) * total;
+    audioEngine.seek(seekTime);
+    setSessionProgress(progress);
+  }, [userConfig.contentConfig]);
+
+  // --- 播放/暂停按钮 ---
+  const startPlayback = useCallback(async () => {
+    if (isPlaybackStarted) return;
+    setIsPlaybackStarted(true);
+    setIsPlaying(true);
+
+    try {
+      await requestWakeLock();
+      startScreenAutoOff();
+
+      if (timerRef.current) clearInterval(timerRef.current);
+      timerRef.current = setInterval(() => {
+        const total = userConfig.contentConfig?.sessionDuration || 1;
+        const currentTime = audioEngine.getCurrentTime();
+        const progress = Math.min((currentTime / total) * 100, 100);
+        setSessionProgress(progress);
+      }, 200);
+
+      if (userConfig.contentConfig?.audioFile) {
+        await audioEngine.playLoadedAudio();
+      }
+    } catch (error) {
+      console.error('Playback error:', error);
+    } finally {
+      finishSession();
+    }
+  }, [finishSession, isPlaybackStarted, requestWakeLock, startScreenAutoOff, userConfig.contentConfig]);
+
+  const handlePlayPauseToggle = useCallback(() => {
+    if (!isPlaybackStarted) {
+      startPlayback();
+      return;
+    }
+
+    if (isPlaying) {
+      audioEngine.pause();
+    } else {
+      audioEngine.resume();
+    }
+    setIsPlaying(!isPlaying);
+  }, [isPlaybackStarted, isPlaying, startPlayback]);
+
+  // --- 选择模式 ---
   const handleModeSelect = (mode: 'nsdr' | 'sleep' | 'music') => {
     setUserConfig({ mode });
-    if (mode === 'nsdr') {
-      setAppStage('NSDR_DURATION_SELECTOR');
-    } else if (mode === 'sleep') {
-      setAppStage('SLEEP_OPTION_SELECTOR');
-    } else if (mode === 'music') {
-      setAppStage('MUSIC_DURATION_SELECTOR');
-    }
+    if (mode === 'nsdr') setAppStage('NSDR_DURATION_SELECTOR');
+    else if (mode === 'sleep') setAppStage('SLEEP_OPTION_SELECTOR');
+    else if (mode === 'music') setAppStage('MUSIC_DURATION_SELECTOR');
   };
 
-  // 选择NSDR时长
   const handleNSDRDurationSelect = (duration: number) => {
     const contentConfig = ContentManager.generateContentConfig('balanced', ['nsdr'], duration);
     setUserConfig(prev => ({ ...prev, duration, contentConfig }));
     setAppStage('SESSION_PREP');
+    
+    // 异步预加载音频文件，不阻塞UI过渡
+    if (contentConfig.audioFile) {
+      audioEngine.prepareAudioFile(contentConfig.audioFile).catch(console.warn);
+    }
   };
 
-  // 选择睡眠选项
   const handleSleepOptionSelect = (optionId: string) => {
     const contentConfig = ContentManager.generateContentConfig('balanced', ['sleep'], undefined, optionId);
     setUserConfig(prev => ({ ...prev, sleepOption: optionId, contentConfig }));
     setAppStage('SESSION_PREP');
+    
+    // 异步预加载音频文件，不阻塞UI过渡
+    if (contentConfig.audioFile) {
+      audioEngine.prepareAudioFile(contentConfig.audioFile).catch(console.warn);
+    }
   };
 
-  // 选择音乐助眠时长
   const handleMusicDurationSelect = (musicOption: string) => {
     const contentConfig = ContentManager.generateContentConfig('balanced', ['music'], undefined, undefined, musicOption);
     setUserConfig(prev => ({ ...prev, musicOption, contentConfig }));
     setAppStage('SESSION_PREP');
+    
+    // 异步预加载音频文件，不阻塞UI过渡
+    if (contentConfig.audioFile) {
+      audioEngine.prepareAudioFile(contentConfig.audioFile).catch(console.warn);
+    }
   };
 
-  // 核心：只播放你的MP3，不加载任何背景音乐
+  // --- 核心：开始播放 ---
   const runSession = async () => {
     if (!userConfig.contentConfig) return;
 
-    const totalDuration = userConfig.contentConfig.sessionDuration;
-    setAppStage('ZENSLEEP');
-    setIsSessionActive(true);
-    setSessionProgress(0);
-
-    let elapsedSeconds = 0;
-    
-    // 计时器
-    timerRef.current = setInterval(() => {
-      elapsedSeconds += 1;
-      const progress = Math.min(elapsedSeconds / totalDuration, 1);
-      setSessionProgress(progress);
-      
-      if (elapsedSeconds >= totalDuration) {
-        clearTimer();
+    if (userConfig.contentConfig.audioFile) {
+      try {
+        await audioEngine.prepareAudioFile(userConfig.contentConfig.audioFile);
+      } catch (error) {
+        console.error(error);
       }
-    }, 1000);
-
-    try {
-      // 直接播放 MP3 文件（不启动背景音）
-      if (userConfig.contentConfig.audioFile) {
-        await audioEngine.playAudioFile(userConfig.contentConfig.audioFile);
-      }
-
-      // 等待播放结束
-      await new Promise((r) => setTimeout(r, totalDuration * 1000));
-
-      handleExitSession();
-      setAppStage('OFF');
-    } catch (error) {
-      console.error('Session error:', error);
-      handleExitSession();
-      setAppStage('OFF');
     }
+
+    await enterFullscreen();
+
+    setAppStage('ZENSLEEP');
+    setSessionProgress(0);
+    setIsScreenOn(true);
+    setIsPlaybackStarted(false);
+    setIsPlaying(false);
   };
+
+  // --- 页面卸载强制清理 ---
+  useEffect(() => {
+    return () => resetSession();
+  }, [resetSession]);
 
   return (
     <div className="fixed inset-0 min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 text-slate-100">
       <AnimatePresence mode="wait">
         {appStage === 'INITIAL_CHOICE' && <InitialChoice onModeSelect={handleModeSelect} />}
-        
+
         {appStage === 'NSDR_DURATION_SELECTOR' && (
-          <NSDRDurationSelector 
-            onDurationSelect={handleNSDRDurationSelect} 
-            onBack={() => setAppStage('INITIAL_CHOICE')} 
+          <NSDRDurationSelector
+            onDurationSelect={handleNSDRDurationSelect}
+            onBack={() => setAppStage('INITIAL_CHOICE')}
           />
         )}
-        
+
         {appStage === 'SLEEP_OPTION_SELECTOR' && (
-          <SleepOptionSelector 
-            onOptionSelect={handleSleepOptionSelect} 
-            onBack={() => setAppStage('INITIAL_CHOICE')} 
+          <SleepOptionSelector
+            onOptionSelect={handleSleepOptionSelect}
+            onBack={() => setAppStage('INITIAL_CHOICE')}
           />
         )}
 
         {appStage === 'MUSIC_DURATION_SELECTOR' && (
-          <MusicDurationSelector 
-            onMusicSelect={handleMusicDurationSelect} 
-            onBack={() => setAppStage('INITIAL_CHOICE')} 
+          <MusicDurationSelector
+            onMusicSelect={handleMusicDurationSelect}
+            onBack={() => setAppStage('INITIAL_CHOICE')}
           />
         )}
 
-        {/* 准备页面 */}
         {appStage === 'SESSION_PREP' && (
           <motion.div key="prep" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="w-full h-full flex items-center justify-center p-6">
             <div className="text-center space-y-10 max-w-md">
               <motion.div animate={{ rotate: 360 }} transition={{ duration: 10, repeat: Infinity, ease: 'linear' }}>
                 <Moon className="w-16 h-16 text-emerald-400 mx-auto opacity-80" />
               </motion.div>
-              
+
               <div className="space-y-4">
                 <h2 className="text-2xl font-light">准备就绪</h2>
                 {userConfig.contentConfig && (
@@ -166,7 +277,7 @@ export default function ZenSleepApp() {
                   </p>
                 )}
                 <p className="text-slate-500 text-xs leading-relaxed px-8">
-                  为了达到无干扰效果，开始后屏幕将进入静谧模式（黑屏）。结束后会自动退出，如需中途操作可点击屏幕任意处。
+                  开始后屏幕会自动熄屏。点击任意位置可重新点亮屏幕。播放结束后会自动退出程序，不需要任何操作。祝您有个好梦。
                 </p>
               </div>
 
@@ -192,30 +303,21 @@ export default function ZenSleepApp() {
           </motion.div>
         )}
 
-        {/* 播放页面 */}
         {appStage === 'ZENSLEEP' && (
           <ZenSleepSession
             onExit={handleExitSession}
-            onBackToPrep={() => setAppStage('SESSION_PREP')}
+            onBackToPrep={() => {
+              resetSession();
+              setAppStage('SESSION_PREP');
+            }}
             totalDuration={userConfig.contentConfig?.sessionDuration || 0}
             currentProgress={sessionProgress}
+            isScreenOn={isScreenOn}
+            isPlaying={isPlaying}
+            onTapScreen={handleTapScreen}
+            onSeek={handleSeekProgress}
+            onTogglePlay={handlePlayPauseToggle}
           />
-        )}
-
-        {/* 结束页面 */}
-        {appStage === 'OFF' && (
-          <motion.div key="off" className="w-full h-full flex flex-col items-center justify-center bg-black">
-            <div className="text-center space-y-4">
-              <p className="text-slate-700 text-sm tracking-widest uppercase">Session Completed</p>
-              <p className="text-slate-500 italic font-serif">祝你好梦</p>
-              <button
-                onClick={() => setAppStage('INITIAL_CHOICE')}
-                className="mt-12 px-8 py-2 rounded-lg border border-slate-800 text-slate-600 text-xs hover:border-slate-600 transition-all"
-              >
-                回到主页
-              </button>
-            </div>
-          </motion.div>
         )}
       </AnimatePresence>
     </div>

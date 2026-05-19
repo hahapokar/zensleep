@@ -45,9 +45,10 @@ export default function SleepOptionSelector({
   const handleOptionSelect = (optionId: string) => {
     setSelectedOption(optionId);
     setIsConfirming(true);
+    // 减少延迟从 600ms 改为 300ms，更快响应
     setTimeout(() => {
       onOptionSelect(optionId);
-    }, 600);
+    }, 300);
   };
 
   return (

@@ -7,9 +7,9 @@ interface InitialChoiceProps {
 }
 
 export default function InitialChoice({ onModeSelect }: InitialChoiceProps) {
-  const [selectedMode, setSelectedMode] = useState<'nsdr' | 'sleep' | null>(null);
+  const [selectedMode, setSelectedMode] = useState<'nsdr' | 'sleep' | 'music' | null>(null);
 
-  const handleModeSelect = (mode: 'nsdr' | 'sleep') => {
+  const handleModeSelect = (mode: 'nsdr' | 'sleep' | 'music') => {
     setSelectedMode(mode);
     setTimeout(() => onModeSelect(mode), 600);
   };
@@ -113,7 +113,7 @@ export default function InitialChoice({ onModeSelect }: InitialChoiceProps) {
                 <h3 className="text-slate-100 font-semibold text-lg">音乐助眠</h3>
               </div>
               <p className="text-slate-400 text-sm">
-                纯背景音乐陪伴，无语音引导，让温柔的音乐帮助您放松身心、轻松入眠
+                无语音引导，纯脑波助眠音频，通过舒缓的频率声波帮助身心放松、自然入睡。
               </p>
               <div className="flex items-center gap-2 text-emerald-400 text-sm mt-3">
                 <span>开始聆听</span>

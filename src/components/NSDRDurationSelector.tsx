@@ -45,9 +45,10 @@ export default function NSDRDurationSelector({
   const handleDurationSelect = (duration: number) => {
     setSelectedDuration(`${duration}s`);
     setIsConfirming(true);
+    // 减少延迟从 600ms 改为 300ms，更快响应
     setTimeout(() => {
       onDurationSelect(duration);
-    }, 600);
+    }, 300);
   };
 
   return (

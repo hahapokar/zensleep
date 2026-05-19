@@ -45,9 +45,10 @@ export default function MusicDurationSelector({
   const handleMusicSelect = (musicId: string) => {
     setSelectedMusic(musicId);
     setIsConfirming(true);
+    // 减少延迟从 600ms 改为 300ms，更快响应
     setTimeout(() => {
       onMusicSelect(musicId);
-    }, 600);
+    }, 300);
   };
 
   return (
@@ -86,7 +87,7 @@ export default function MusicDurationSelector({
               </h1>
             </div>
             <p className="text-slate-400">
-              选择纯背景音乐助眠，无讲话引导，适合习惯有声音陪伴的用户
+              选择放脑波助眠音频，通过舒缓的频率声波帮助身心放松、自然入睡。
             </p>
           </div>
 
@@ -141,7 +142,7 @@ export default function MusicDurationSelector({
           {/* 提示 */}
           <div className="p-4 rounded-lg bg-slate-800/50 border-l-2 border-emerald-400">
             <p className="text-slate-300 text-sm">
-              🎵 提示：纯背景音乐模式，没有语音引导和讲话，只有舒适的环境音乐陪伴您入睡。
+              🎵 提示：脑波助眠音频，通过特定频率声波引导大脑逐步放松，并非白噪音或纯音乐。
             </p>
           </div>
         </motion.div>

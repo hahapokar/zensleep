@@ -1,71 +1,27 @@
 /**
- * ZenSleep AudioEngine - 自动化睡眠阶梯版
+ * ZenSleep AudioEngine - 简洁版本
+ * 仅负责 HTMLAudioElement 的播放控制和缓存管理
  */
 export class AudioEngine {
-  private audioCtx: AudioContext | null = null;
-  private masterGain: GainNode | null = null;
-  private lowpassFilter: BiquadFilterNode | null = null;
-  private panner: StereoPannerNode | null = null;
-  private pinkNoiseSource: AudioBufferSourceNode | null = null;
-  private brainwaveOsc: OscillatorNode | null = null;
-  private brainwaveLfo: OscillatorNode | null = null;
-  private brainwaveGain: GainNode | null = null;
-  private pinkNoiseGain: GainNode | null = null;
   private audioElement: HTMLAudioElement | null = null;
   
   private baseVolume: number = 0.12;
   private isPaused: boolean = false;
   private pausedVolume: number = 0;
-  private pausedBrainwaveVolume: number = 0;
-  private pausedNoiseVolume: number = 0; 
+  private audioAssetPath: string | null = null;
+  private audioBlobUrl: string | null = null;
+  private audioEndListener: (() => void) | null = null;
+  private audioErrorListener: ((event: Event) => void) | null = null;
 
-  private async init() {
-    if (this.audioCtx) {
-      if (this.audioCtx.state === 'suspended') await this.audioCtx.resume();
-      return;
-    }
-    const AudioContextClass = (window as any).AudioContext || (window as any).webkitAudioContext;
-    this.audioCtx = new AudioContextClass();
-    
-    this.masterGain = this.audioCtx!.createGain();
-    this.masterGain.connect(this.audioCtx!.destination);
-    // 初始音量为 0，用于 fadeIn
-    this.masterGain.gain.value = 0;
 
-    this.lowpassFilter = this.audioCtx!.createBiquadFilter();
-    this.lowpassFilter.type = 'lowpass';
-    this.lowpassFilter.frequency.value = 800; // 初始较明亮，方便导引
-    
-    this.panner = this.audioCtx!.createStereoPanner();
-    this.panner.connect(this.lowpassFilter);
-    this.lowpassFilter.connect(this.masterGain);
 
-    // 为粉红噪音添加单独的增益节点，便于暂停时控制
-    this.pinkNoiseGain = this.audioCtx!.createGain();
-    this.pinkNoiseGain.gain.value = 1.0;
-    this.pinkNoiseGain.connect(this.panner);
-  }
 
-  // 背景音避让，增加 3 秒平滑度
-  public fadeBackgroundForVoice(isSpeaking: boolean) {
-    if (!this.masterGain || !this.audioCtx) return;
-    const targetVol = isSpeaking ? this.baseVolume * 0.3 : this.baseVolume;
-    this.masterGain.gain.setTargetAtTime(targetVol, this.audioCtx.currentTime, 3.0);
-  }
 
-  // 音量控制方法
   public setVolume(volume: number) {
-    // volume 范围: 0-1
     this.baseVolume = Math.max(0, Math.min(1, volume));
     
-    // 如果有MP3音频，直接控制其音量
     if (this.audioElement) {
       this.audioElement.volume = this.baseVolume;
-    }
-    
-    // 如果有音频管道且未暂停，更新masterGain
-    if (this.masterGain && this.audioCtx && !this.isPaused) {
-      this.masterGain.gain.setTargetAtTime(this.baseVolume, this.audioCtx.currentTime, 0.3);
     }
   }
 
@@ -73,191 +29,197 @@ export class AudioEngine {
     return this.baseVolume;
   }
 
-  public async startAudioPipeline() {
-    await this.init();
-    const ctx = this.audioCtx!;
 
-    // 1. 生成并启动粉红噪音
-    const bufferSize = 2 * ctx.sampleRate;
-    const buffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
-    const data = buffer.getChannelData(0);
-    let b0=0, b1=0, b2=0, b3=0, b4=0, b5=0, b6=0;
-    for (let i = 0; i < bufferSize; i++) {
-      const white = Math.random() * 2 - 1;
-      b0 = 0.99886 * b0 + white * 0.0555179;
-      b1 = 0.99332 * b1 + white * 0.0750759;
-      b2 = 0.96900 * b2 + white * 0.1538520;
-      b3 = 0.86650 * b3 + white * 0.3104856;
-      b4 = 0.55000 * b4 + white * 0.5329522;
-      b5 = -0.7616 * b5 - white * 0.0168980;
-      data[i] = (b0 + b1 + b2 + b3 + b4 + b5 + b6 + white * 0.5362) * 0.11;
-      b6 = white * 0.115926;
-    }
-    this.pinkNoiseSource = ctx.createBufferSource();
-    this.pinkNoiseSource.buffer = buffer;
-    this.pinkNoiseSource.loop = true;
-    this.pinkNoiseSource.connect(this.pinkNoiseGain!);
-    this.pinkNoiseSource.start();
-
-    // 2. 启动脑波 (初始 Alpha 10Hz)
-    this.brainwaveOsc = ctx.createOscillator();
-    this.brainwaveOsc.type = 'sine';
-    this.brainwaveOsc.frequency.value = 65; // 基频 
-    
-    this.brainwaveLfo = ctx.createOscillator();
-    this.brainwaveLfo.type = 'sine';
-    this.brainwaveLfo.frequency.value = 10; // 初始 Alpha
-    
-    this.brainwaveGain = ctx.createGain();
-    this.brainwaveGain.gain.value = 0.15; 
-
-    const lfoGain = ctx.createGain();
-    lfoGain.gain.value = 0.12; 
-
-    this.brainwaveLfo.connect(lfoGain.gain);
-    this.brainwaveOsc.connect(this.brainwaveGain);
-    this.brainwaveGain.connect(this.panner!);
-    
-    this.brainwaveOsc.start();
-    this.brainwaveLfo.start();
-
-    // 3. 全局淡入 5 秒
-    this.masterGain!.gain.linearRampToValueAtTime(this.baseVolume, ctx.currentTime + 5);
-  }
-
-  // 动态调节脑波频率和音色变闷
-  public evolveState(targetFreq: number, filterFreq: number, transitionSec: number) {
-    if (!this.audioCtx || !this.brainwaveLfo || !this.lowpassFilter) return;
-    const now = this.audioCtx.currentTime;
-    this.brainwaveLfo.frequency.exponentialRampToValueAtTime(targetFreq, now + transitionSec);
-    this.lowpassFilter.frequency.exponentialRampToValueAtTime(filterFreq, now + transitionSec);
-  }
-
-  // 呼吸耦合：吸气时频率上升且音量微增，呼气时频率下降且音量微减
-  public syncBreathing(phase: 'INHALE' | 'EXHALE', durationMs: number) {
-    if (!this.audioCtx || !this.lowpassFilter || !this.masterGain) return;
-    const now = this.audioCtx.currentTime;
-    const time = durationMs / 1000;
-
-    if (phase === 'INHALE') {
-      this.lowpassFilter.frequency.setTargetAtTime(450, now, time / 2);
-      this.masterGain.gain.setTargetAtTime(this.baseVolume * 1.1, now, time / 2);
-    } else {
-      this.lowpassFilter.frequency.setTargetAtTime(180, now, time / 2);
-      this.masterGain.gain.setTargetAtTime(this.baseVolume * 0.9, now, time / 2);
-    }
-  }
 
   public pause() {
-    // 如果正在播放MP3，直接暂停它
-    if (this.audioElement && !this.audioElement.paused) {
-      this.audioElement.pause();
-      this.isPaused = true;
-      return;
+    if (this.isPaused) return;
+    
+    this.isPaused = true;
+
+    if (this.audioElement) {
+      if (!this.audioElement.paused) {
+        this.audioElement.pause();
+      }
     }
 
-    // 处理音频管道暂停
-    if (!this.masterGain || !this.audioCtx || this.isPaused) return;
-    this.isPaused = true;
-    
-    // 保存当前音量
-    this.pausedVolume = this.masterGain.gain.value;
-    this.pausedBrainwaveVolume = this.brainwaveGain?.gain.value ?? 0;
-    this.pausedNoiseVolume = this.pinkNoiseGain?.gain.value ?? 1.0;
-    
-    // 淡出所有音频
-    const now = this.audioCtx.currentTime;
-    this.masterGain.gain.setTargetAtTime(0, now, 0.5);
-    if (this.brainwaveGain) {
-      this.brainwaveGain.gain.setTargetAtTime(0, now, 0.5);
-    }
-    if (this.pinkNoiseGain) {
-      this.pinkNoiseGain.gain.setTargetAtTime(0, now, 0.5);
+    if (this.pausedVolume === 0 && this.audioElement) {
+      this.pausedVolume = this.audioElement.volume;
     }
   }
 
   public resume() {
-    // 如果正在播放MP3且是暂停状态，恢复播放
-    if (this.audioElement && this.audioElement.paused && this.isPaused) {
+    if (!this.isPaused) return;
+    
+    this.isPaused = false;
+
+    if (this.audioElement && this.audioElement.paused) {
       this.audioElement.play().catch(console.error);
-      this.isPaused = false;
+    }
+
+    if (this.audioElement) {
+      this.audioElement.volume = this.pausedVolume;
+    }
+  }
+
+  // ==============================
+  // ✅ 修复：返回 0-100 进度百分比
+  // ==============================
+  public getCurrentTime(): number {
+    return this.audioElement?.currentTime || 0;
+  }
+
+  public getPlaybackProgress(totalDuration: number): number {
+    if (!this.audioElement || totalDuration <= 0) {
+      return 0;
+    }
+    return Math.min((this.audioElement.currentTime / totalDuration) * 100, 100);
+  }
+
+  private removeAudioEventListeners() {
+    if (!this.audioElement) return;
+    if (this.audioEndListener) {
+      this.audioElement.removeEventListener('ended', this.audioEndListener);
+      this.audioEndListener = null;
+    }
+    if (this.audioErrorListener) {
+      this.audioElement.removeEventListener('error', this.audioErrorListener);
+      this.audioErrorListener = null;
+    }
+  }
+
+  private async fetchAndCacheAudio(url: string): Promise<Blob> {
+    const cacheName = 'zensleep-audio-cache';
+    let response: Response | undefined;
+
+    if ('caches' in window) {
+      const cache = await caches.open(cacheName);
+      response = await cache.match(url);
+      if (response && response.ok) {
+        return await response.blob();
+      }
+
+      response = await fetch(url, { credentials: 'same-origin' });
+      if (!response.ok) {
+        throw new Error(`Failed to fetch audio file: ${url}`);
+      }
+      cache.put(url, response.clone()).catch(() => {});
+      return await response.blob();
+    }
+
+    response = await fetch(url, { credentials: 'same-origin' });
+    if (!response.ok) {
+      throw new Error(`Failed to fetch audio file: ${url}`);
+    }
+    return await response.blob();
+  }
+
+  public async prepareAudioFile(audioPath: string): Promise<void> {
+    const resolvedPath = new URL(audioPath, window.location.href).href;
+    if (this.audioAssetPath === resolvedPath && this.audioElement) {
       return;
     }
 
-    // 处理音频管道恢复
-    if (!this.masterGain || !this.audioCtx || !this.isPaused) return;
-    this.isPaused = false;
-    
-    // 淡入恢复音量
-    const now = this.audioCtx.currentTime;
-    this.masterGain.gain.setTargetAtTime(this.pausedVolume, now, 0.5);
-    if (this.brainwaveGain) {
-      this.brainwaveGain.gain.setTargetAtTime(this.pausedBrainwaveVolume, now, 0.5);
+    this.removeAudioEventListeners();
+    if (this.audioBlobUrl) {
+      URL.revokeObjectURL(this.audioBlobUrl);
+      this.audioBlobUrl = null;
     }
-    if (this.pinkNoiseGain) {
-      this.pinkNoiseGain.gain.setTargetAtTime(this.pausedNoiseVolume, now, 0.5);
-    }
+
+    this.audioAssetPath = resolvedPath;
+    const audioBlob = await this.fetchAndCacheAudio(resolvedPath);
+    this.audioBlobUrl = URL.createObjectURL(audioBlob);
+
+    this.audioElement = new Audio(this.audioBlobUrl);
+    this.audioElement.preload = 'auto';
+    this.audioElement.volume = this.baseVolume;
   }
 
-  public async playAudioFile(audioPath: string): Promise<void> {
-    return new Promise((resolve, reject) => {
-      // MP3 播放时降低背景音，避免混合噪音
-      if (this.masterGain && this.audioCtx) {
-        this.masterGain.gain.setTargetAtTime(0, this.audioCtx.currentTime, 1.0);
-      }
+  public async playLoadedAudio(): Promise<void> {
+    const audioElement = this.audioElement;
+    if (!audioElement) {
+      return Promise.reject(new Error('No audio file prepared for playback.'));
+    }
 
-      this.audioElement = new Audio(audioPath);
-      this.audioElement.volume = this.baseVolume; // 使用当前的音量设置
-      
-      this.audioElement.addEventListener('ended', () => {
-        // MP3 播放结束后恢复背景音
-        if (this.masterGain && this.audioCtx) {
-          this.masterGain.gain.setTargetAtTime(this.baseVolume, this.audioCtx.currentTime, 1.0);
-        }
+    return new Promise((resolve, reject) => {
+      this.removeAudioEventListeners();
+
+      const cleanup = () => {
+        audioElement.removeEventListener('ended', handleEnded);
+        audioElement.removeEventListener('error', handleError);
+        this.audioEndListener = null;
+        this.audioErrorListener = null;
+      };
+
+      const handleEnded = () => {
+        cleanup();
         resolve();
+      };
+
+      const handleError = () => {
+        cleanup();
+        reject(new Error(`Failed to load audio file: ${audioElement.src || 'unknown'}`));
+      };
+
+      this.audioEndListener = handleEnded;
+      this.audioErrorListener = handleError;
+      audioElement.addEventListener('ended', handleEnded);
+      audioElement.addEventListener('error', handleError);
+
+      audioElement.play().catch(err => {
+        cleanup();
+        reject(err);
       });
-      
-      this.audioElement.addEventListener('error', (e) => {
-        // 错误时也恢复背景音
-        if (this.masterGain && this.audioCtx) {
-          this.masterGain.gain.setTargetAtTime(this.baseVolume, this.audioCtx.currentTime, 1.0);
-        }
-        reject(new Error(`Failed to load audio file: ${audioPath}`));
-      });
-      
-      this.audioElement.play().catch(reject);
     });
   }
 
-  public terminate() {
-    if (this.brainwaveOsc) {
-      this.brainwaveOsc.stop();
-    }
-    if (this.brainwaveLfo) {
-      this.brainwaveLfo.stop();
-    }
-    if (this.pinkNoiseSource) {
-      this.pinkNoiseSource.stop();
-    }
+  public async playAudioFile(audioPath: string): Promise<void> {
+    await this.prepareAudioFile(audioPath);
+    return this.playLoadedAudio();
+  }
+
+  // ==============================
+  // ✅ 新增：彻底停止音频（关闭会话用）
+  // ==============================
+  public stop() {
     if (this.audioElement) {
       this.audioElement.pause();
-      this.audioElement = null;
+      this.audioElement.currentTime = 0;
+      this.removeAudioEventListeners();
     }
-    if (this.masterGain) {
-      this.masterGain.gain.value = 0;
+    if (this.audioBlobUrl) {
+      URL.revokeObjectURL(this.audioBlobUrl);
+      this.audioBlobUrl = null;
     }
-    if (this.audioCtx) {
-      this.audioCtx.close();
+    this.audioAssetPath = null;
+    this.isPaused = false;
+  }
+
+  // ==============================
+  // ✅ 新增：拖动进度条跳转
+  // ==============================
+  public seek(time: number) {
+    if (this.audioElement) {
+      this.audioElement.currentTime = time;
     }
-    this.audioCtx = null;
-    this.masterGain = null;
-    this.lowpassFilter = null;
-    this.panner = null;
-    this.pinkNoiseSource = null;
-    this.brainwaveOsc = null;
-    this.brainwaveLfo = null;
-    this.brainwaveGain = null;
-    this.pinkNoiseGain = null;
+  }
+
+  public terminate() {
+    try {
+      if (this.audioElement) {
+        this.audioElement.pause();
+        this.removeAudioEventListeners();
+        this.audioElement = null;
+      }
+      if (this.audioBlobUrl) {
+        URL.revokeObjectURL(this.audioBlobUrl);
+        this.audioBlobUrl = null;
+      }
+      this.audioAssetPath = null;
+      this.isPaused = false;
+    } catch (e) {
+      console.error('Error during audio engine termination:', e);
+    }
   }
 }
+
 export const audioEngine = new AudioEngine();
