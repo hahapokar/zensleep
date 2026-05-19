@@ -6,3 +6,7 @@ coverage/
 *.log
 .env*
 !.env.example
+
+# 音频文件 - 从 Cloudflare R2 获取
+public/audio/
+audio/

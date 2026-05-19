@@ -4,15 +4,8 @@
 
 import { ScriptManager, SCRIPTS } from '../data/scripts';
 
-// 获取 BASE_URL
-function getBaseUrl(): string {
-  try {
-    // @ts-ignore
-    return import.meta.env?.BASE_URL || '/';
-  } catch {
-    return '/';
-  }
-}
+// Cloudflare R2 音频存储 URL
+const CLOUDFLARE_R2_URL = 'https://pub-301aea272da946d0a14d11fde1885996.r2.dev/';
 
 export interface ContentConfig {
   constitution: string;
@@ -56,20 +49,19 @@ export class ContentManager {
     const musicTracks: string[] = [];
 
     let audioFile: string | undefined;
-    const baseUrl = getBaseUrl();
 
     if (symptoms.includes('nsdr')) {
       if (nsdrDuration === 600) {
-        audioFile = `${baseUrl}audio/nsdr/nsdr-power-recharge.mp3?v=3`;
+        audioFile = `${CLOUDFLARE_R2_URL}audio/nsdr/nsdr-power-recharge.mp3`;
       } else if (nsdrDuration === 1200) {
-        audioFile = `${baseUrl}audio/nsdr/nsdr-stress-reset.mp3?v=3`;
+        audioFile = `${CLOUDFLARE_R2_URL}audio/nsdr/nsdr-stress-reset.mp3`;
       } else {
-        audioFile = `${baseUrl}audio/nsdr/nsdr-deep-recovery.mp3?v=3`;
+        audioFile = `${CLOUDFLARE_R2_URL}audio/nsdr/nsdr-deep-recovery.mp3`;
       }
     } else if (symptoms.includes('sleep') && sleepOption) {
-      audioFile = `${baseUrl}audio/sleep/sleep-${sleepOption}.mp3?v=3`;
+      audioFile = `${CLOUDFLARE_R2_URL}audio/sleep/sleep-${sleepOption}.mp3`;
     } else if (symptoms.includes('music') && musicOption) {
-      audioFile = `${baseUrl}audio/music/music-${musicOption}.mp3?v=3`;
+      audioFile = `${CLOUDFLARE_R2_URL}audio/music/music-${musicOption}.mp3`;
     }
 
     return {
