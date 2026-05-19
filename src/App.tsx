@@ -277,7 +277,7 @@ export default function ZenSleepApp() {
                   </p>
                 )}
                 <p className="text-slate-500 text-xs leading-relaxed px-8">
-                  开始后屏幕会自动熄屏。点击任意位置可重新点亮屏幕。播放结束后会自动退出程序，不需要任何操作。祝您有个好梦。
+                  第一次播放需要时间缓存，以后即可迅速打开播放。开始后屏幕会自动熄屏。点击任意位置可重新点亮屏幕。播放结束后会自动退出程序，不需要任何操作。祝您有个好梦。
                 </p>
               </div>
 
