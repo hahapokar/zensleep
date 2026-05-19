@@ -52,16 +52,16 @@ export class ContentManager {
 
     if (symptoms.includes('nsdr')) {
       if (nsdrDuration === 600) {
-        audioFile = `${CLOUDFLARE_R2_URL}audio/nsdr/nsdr-power-recharge.mp3`;
+        audioFile = `${CLOUDFLARE_R2_URL}nsdr-power-recharge.mp3`;
       } else if (nsdrDuration === 1200) {
-        audioFile = `${CLOUDFLARE_R2_URL}audio/nsdr/nsdr-stress-reset.mp3`;
+        audioFile = `${CLOUDFLARE_R2_URL}nsdr-stress-reset.mp3`;
       } else {
-        audioFile = `${CLOUDFLARE_R2_URL}audio/nsdr/nsdr-deep-recovery.mp3`;
+        audioFile = `${CLOUDFLARE_R2_URL}nsdr-deep-recovery.mp3`;
       }
     } else if (symptoms.includes('sleep') && sleepOption) {
-      audioFile = `${CLOUDFLARE_R2_URL}audio/sleep/sleep-${sleepOption}.mp3`;
+      audioFile = `${CLOUDFLARE_R2_URL}sleep-${sleepOption}.mp3`;
     } else if (symptoms.includes('music') && musicOption) {
-      audioFile = `${CLOUDFLARE_R2_URL}audio/music/music-${musicOption}.mp3`;
+      audioFile = `${CLOUDFLARE_R2_URL}music-${musicOption}.mp3`;
     }
 
     return {
