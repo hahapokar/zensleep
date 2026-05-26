@@ -67,7 +67,7 @@ export class ContentManager {
     } else if (symptoms.includes('music') && musicOption) {
       audioFile = `${CLOUDFLARE_R2_URL}music-${musicOption}.mp3`;
     } else if (symptoms.includes('whitenoise') && whitenoiseOption) {
-      audioFile = `${CLOUDFLARE_R2_URL}${whitenoiseOption}.mp3`;
+      audioFile = `${CLOUDFLARE_R2_URL}whitenoise-${whitenoiseOption}.mp3`;
     }
 
     return {

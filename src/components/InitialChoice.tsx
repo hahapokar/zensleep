@@ -15,29 +15,29 @@ export default function InitialChoice({ onModeSelect }: InitialChoiceProps) {
   };
 
   return (
-    <div className="fixed inset-0 bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 flex items-center justify-center p-6">
+    <div className="fixed inset-0 bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 flex flex-col overflow-y-auto">
       <motion.div
         initial={{ opacity: 0, scale: 0.95 }}
         animate={{ opacity: 1, scale: 1 }}
         transition={{ duration: 0.6 }}
-        className="flex flex-col items-center gap-8 max-w-md"
+        className="flex flex-col items-center gap-5 max-w-md mx-auto w-full p-4 py-6"
       >
         {/* 标题 */}
         <motion.div
           initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6, delay: 0.2 }}
-          className="text-center space-y-3"
+          className="text-center space-y-2"
         >
-          <div className="flex justify-center mb-4">
-            <Moon className="w-16 h-16 text-emerald-400" />
+          <div className="flex justify-center mb-2">
+            <Moon className="w-10 h-10 text-emerald-400" />
           </div>
-          <h1 className="text-slate-100 text-4xl font-light tracking-tight">ZenSleep</h1>
-          <p className="text-slate-400 text-sm tracking-widest">个性化睡眠调理系统</p>
+          <h1 className="text-slate-100 text-2xl font-light tracking-tight">ZenSleep</h1>
+          <p className="text-slate-400 text-xs tracking-widest">个性化睡眠调理系统</p>
         </motion.div>
 
         {/* 模式选择 */}
-        <div className="w-full space-y-4">
+        <div className="w-full space-y-2">
           {/* NSDR 非睡眠放松 */}
           <motion.button
             initial={{ opacity: 0, x: -20 }}
@@ -46,20 +46,20 @@ export default function InitialChoice({ onModeSelect }: InitialChoiceProps) {
             whileHover={{ scale: 1.02 }}
             whileTap={{ scale: 0.98 }}
             onClick={() => handleModeSelect('nsdr')}
-            className={`w-full p-6 rounded-lg border-2 transition-all duration-300 ${
+            className={`w-full p-3 rounded-lg border-2 transition-all duration-300 ${
               selectedMode === 'nsdr'
                 ? 'border-emerald-400 bg-emerald-400/10'
                 : 'border-slate-700 bg-slate-800/50 hover:border-emerald-400/50'
             }`}
           >
-            <div className="text-left space-y-2">
-              <h3 className="text-slate-100 font-semibold text-lg">NSDR 非睡眠放松</h3>
-              <p className="text-slate-400 text-sm">
-                白天进行非睡眠深度放松练习，帮助您在清醒状态下获得深度放松和冥想体验
+            <div className="text-left space-y-1">
+              <h3 className="text-slate-100 font-semibold text-sm">NSDR 非睡眠放松</h3>
+              <p className="text-slate-400 text-xs">
+                白天进行非睡眠深度放松练习
               </p>
-              <div className="flex items-center gap-2 text-emerald-400 text-sm mt-3">
+              <div className="flex items-center gap-2 text-emerald-400 text-xs mt-1">
                 <span>开始放松</span>
-                <ArrowRight size={16} />
+                <ArrowRight size={12} />
               </div>
             </div>
           </motion.button>
@@ -72,23 +72,23 @@ export default function InitialChoice({ onModeSelect }: InitialChoiceProps) {
             whileHover={{ scale: 1.02 }}
             whileTap={{ scale: 0.98 }}
             onClick={() => handleModeSelect('sleep')}
-            className={`w-full p-6 rounded-lg border-2 transition-all duration-300 ${
+            className={`w-full p-3 rounded-lg border-2 transition-all duration-300 ${
               selectedMode === 'sleep'
                 ? 'border-emerald-400 bg-emerald-400/10'
                 : 'border-slate-700 bg-slate-800/50 hover:border-emerald-400/50'
             }`}
           >
-            <div className="text-left space-y-2">
-              <div className="flex items-center gap-2 mb-1">
-                <Moon size={18} className="text-emerald-400" />
-                <h3 className="text-slate-100 font-semibold text-lg">进入睡眠</h3>
+            <div className="text-left space-y-1">
+              <div className="flex items-center gap-2 mb-0.5">
+                <Moon size={14} className="text-emerald-400" />
+                <h3 className="text-slate-100 font-semibold text-sm">进入睡眠</h3>
               </div>
-              <p className="text-slate-400 text-sm">
-                夜晚进入深度睡眠模式，通过引导语和环境音效帮助您快速入睡并获得优质睡眠
+              <p className="text-slate-400 text-xs">
+                夜晚进入深度睡眠模式，通过引导语帮助入睡
               </p>
-              <div className="flex items-center gap-2 text-emerald-400 text-sm mt-3">
+              <div className="flex items-center gap-2 text-emerald-400 text-xs mt-1">
                 <span>开始入睡</span>
-                <ArrowRight size={16} />
+                <ArrowRight size={12} />
               </div>
             </div>
           </motion.button>
@@ -101,23 +101,23 @@ export default function InitialChoice({ onModeSelect }: InitialChoiceProps) {
             whileHover={{ scale: 1.02 }}
             whileTap={{ scale: 0.98 }}
             onClick={() => handleModeSelect('music')}
-            className={`w-full p-6 rounded-lg border-2 transition-all duration-300 ${
+            className={`w-full p-3 rounded-lg border-2 transition-all duration-300 ${
               selectedMode === 'music'
                 ? 'border-emerald-400 bg-emerald-400/10'
                 : 'border-slate-700 bg-slate-800/50 hover:border-emerald-400/50'
             }`}
           >
-            <div className="text-left space-y-2">
-              <div className="flex items-center gap-2 mb-1">
-                <Music size={18} className="text-emerald-400" />
-                <h3 className="text-slate-100 font-semibold text-lg">音乐助眠</h3>
+            <div className="text-left space-y-1">
+              <div className="flex items-center gap-2 mb-0.5">
+                <Music size={14} className="text-emerald-400" />
+                <h3 className="text-slate-100 font-semibold text-sm">音乐助眠</h3>
               </div>
-              <p className="text-slate-400 text-sm">
-                无语音引导，纯脑波助眠音频，通过舒缓的频率声波帮助身心放松、自然入睡。
+              <p className="text-slate-400 text-xs">
+                无语音引导，纯脑波助眠音频，帮助身心放松
               </p>
-              <div className="flex items-center gap-2 text-emerald-400 text-sm mt-3">
+              <div className="flex items-center gap-2 text-emerald-400 text-xs mt-1">
                 <span>开始聆听</span>
-                <ArrowRight size={16} />
+                <ArrowRight size={12} />
               </div>
             </div>
           </motion.button>
@@ -130,23 +130,23 @@ export default function InitialChoice({ onModeSelect }: InitialChoiceProps) {
             whileHover={{ scale: 1.02 }}
             whileTap={{ scale: 0.98 }}
             onClick={() => handleModeSelect('whitenoise')}
-            className={`w-full p-6 rounded-lg border-2 transition-all duration-300 ${
+            className={`w-full p-3 rounded-lg border-2 transition-all duration-300 ${
               selectedMode === 'whitenoise'
                 ? 'border-emerald-400 bg-emerald-400/10'
                 : 'border-slate-700 bg-slate-800/50 hover:border-emerald-400/50'
             }`}
           >
-            <div className="text-left space-y-2">
-              <div className="flex items-center gap-2 mb-1">
-                <Waves size={18} className="text-emerald-400" />
-                <h3 className="text-slate-100 font-semibold text-lg">白噪音</h3>
+            <div className="text-left space-y-1">
+              <div className="flex items-center gap-2 mb-0.5">
+                <Waves size={14} className="text-emerald-400" />
+                <h3 className="text-slate-100 font-semibold text-sm">白噪音</h3>
               </div>
-              <p className="text-slate-400 text-sm">
-                自然白噪音，包括营火、雷声、海浪、水滴等，营造宁静的睡眠环境。
+              <p className="text-slate-400 text-xs">
+                自然白噪音，包括营火、雷声、海浪、水滴等
               </p>
-              <div className="flex items-center gap-2 text-emerald-400 text-sm mt-3">
+              <div className="flex items-center gap-2 text-emerald-400 text-xs mt-1">
                 <span>选择声音</span>
-                <ArrowRight size={16} />
+                <ArrowRight size={12} />
               </div>
             </div>
           </motion.button>
@@ -157,7 +157,7 @@ export default function InitialChoice({ onModeSelect }: InitialChoiceProps) {
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ duration: 0.6, delay: 0.7 }}
-          className="text-center text-slate-500 text-xs pt-4"
+          className="text-center text-slate-500 text-xs pt-2"
         >
           <p></p>
         </motion.div>

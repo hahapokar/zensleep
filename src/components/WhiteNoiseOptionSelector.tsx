@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Check, ChevronLeft, Flame, Zap, Wind, Waves, Droplets } from 'lucide-react';
 
@@ -64,12 +64,12 @@ export default function WhiteNoiseOptionSelector({
   };
 
   return (
-    <div className="fixed inset-0 bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 flex items-center justify-center p-4 overflow-y-auto">
+    <div className="fixed inset-0 bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 flex flex-col overflow-y-auto">
       <motion.div
         initial={{ opacity: 0, scale: 0.95 }}
         animate={{ opacity: 1, scale: 1 }}
         transition={{ duration: 0.6 }}
-        className="w-full max-w-3xl"
+        className="w-full max-w-3xl mx-auto p-4 py-6"
       >
         {/* 返回按钮 */}
         {onBack && (
@@ -77,10 +77,10 @@ export default function WhiteNoiseOptionSelector({
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             onClick={onBack}
-            className="flex items-center gap-2 text-slate-400 hover:text-slate-200 mb-12 transition-colors"
+            className="flex items-center gap-2 text-slate-400 hover:text-slate-200 mb-6 transition-colors"
           >
-            <ChevronLeft size={20} />
-            <span className="text-sm">返回上一步</span>
+            <ChevronLeft size={18} />
+            <span className="text-xs">返回上一步</span>
           </motion.button>
         )}
 
@@ -88,20 +88,20 @@ export default function WhiteNoiseOptionSelector({
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6 }}
-          className="space-y-8"
+          className="space-y-6"
         >
           {/* 标题 */}
           <div>
-            <h1 className="text-4xl font-light text-slate-100 mb-2">
+            <h1 className="text-2xl font-light text-slate-100 mb-1">
               选择白噪音模式
             </h1>
-            <p className="text-slate-400">
+            <p className="text-slate-400 text-xs">
               根据您的喜好选择适合的白噪音来帮助您入睡
             </p>
           </div>
 
           {/* 选项网格 */}
-          <div className="space-y-3 max-h-[calc(100vh-400px)] overflow-y-auto px-1">
+          <div className="space-y-2">
             {WHITENOISE_OPTIONS.map((option, index) => (
               <motion.button
                 key={option.id}
@@ -111,7 +111,7 @@ export default function WhiteNoiseOptionSelector({
                 whileHover={{ scale: 1.02 }}
                 whileTap={{ scale: 0.98 }}
                 onClick={() => handleOptionSelect(option.id)}
-                className={`p-4 rounded-lg border-2 text-left transition-all ${
+                className={`p-3 rounded-lg border-2 text-left transition-all ${
                   selectedOption === option.id
                     ? 'border-emerald-400 bg-emerald-400/10'
                     : 'border-slate-700 bg-slate-800/30 hover:border-emerald-400/50'
@@ -119,23 +119,23 @@ export default function WhiteNoiseOptionSelector({
               >
                 <div className="flex items-start gap-3">
                   <div
-                    className={`mt-1 w-5 h-5 rounded-md border-2 flex items-center justify-center flex-shrink-0 transition-all ${
+                    className={`mt-0.5 w-4 h-4 rounded-md border-2 flex items-center justify-center flex-shrink-0 transition-all ${
                       selectedOption === option.id
                         ? 'border-emerald-400 bg-emerald-400'
                         : 'border-slate-600'
                     }`}
                   >
                     {selectedOption === option.id && (
-                      <Check size={16} className="text-slate-900" />
+                      <Check size={12} className="text-slate-900" />
                     )}
                   </div>
                   <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 mb-1">
+                    <div className="flex items-center gap-2 mb-0.5">
                       <span className={selectedOption === option.id ? 'text-emerald-400' : 'text-slate-500'}>
-                        {option.icon}
+                        {React.cloneElement(option.icon as React.ReactElement, { size: 16 })}
                       </span>
                       <h3
-                        className={`font-medium text-base leading-tight ${
+                        className={`font-medium text-sm leading-tight ${
                           selectedOption === option.id
                             ? 'text-emerald-100'
                             : 'text-slate-200'
@@ -144,7 +144,7 @@ export default function WhiteNoiseOptionSelector({
                         {option.name}
                       </h3>
                     </div>
-                    <p className="text-slate-400 text-xs mt-1 leading-relaxed line-clamp-2">
+                    <p className="text-slate-400 text-xs mt-0.5 leading-relaxed line-clamp-2">
                       {option.description}
                     </p>
                   </div>
@@ -154,8 +154,8 @@ export default function WhiteNoiseOptionSelector({
           </div>
 
           {/* 提示 */}
-          <div className="p-4 rounded-lg bg-slate-800/50 border-l-2 border-emerald-400">
-            <p className="text-slate-300 text-sm">
+          <div className="p-3 rounded-lg bg-slate-800/50 border-l-2 border-emerald-400">
+            <p className="text-slate-300 text-xs">
               💡 提示：白噪音可以帮助屏蔽环境噪音，创造一个宁静的睡眠环境。选择您喜欢的声音开始吧！
             </p>
           </div>
