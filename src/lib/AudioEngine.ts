@@ -1,6 +1,5 @@
 /**
- * ZenSleep AudioEngine - 简洁版本
- * 仅负责 HTMLAudioElement 的播放控制和缓存管理
+ * ZenSleep AudioEngine - 性能优化版
  */
 export class AudioEngine {
   private audioElement: HTMLAudioElement | null = null;
@@ -12,11 +11,10 @@ export class AudioEngine {
   private audioBlobUrl: string | null = null;
   private audioEndListener: (() => void) | null = null;
   private audioErrorListener: ((event: Event) => void) | null = null;
-
-
-
-
-
+  
+  private blobCache: Map<string, Blob> = new Map();
+  private preparingPromise: Map<string, Promise<void>> = new Map();
+  
   public setVolume(volume: number) {
     this.baseVolume = Math.max(0, Math.min(1, volume));
     
@@ -29,19 +27,15 @@ export class AudioEngine {
     return this.baseVolume;
   }
 
-
-
   public pause() {
     if (this.isPaused) return;
     
     this.isPaused = true;
-
     if (this.audioElement) {
       if (!this.audioElement.paused) {
         this.audioElement.pause();
       }
     }
-
     if (this.pausedVolume === 0 && this.audioElement) {
       this.pausedVolume = this.audioElement.volume;
     }
@@ -51,19 +45,14 @@ export class AudioEngine {
     if (!this.isPaused) return;
     
     this.isPaused = false;
-
     if (this.audioElement && this.audioElement.paused) {
       this.audioElement.play().catch(console.error);
     }
-
     if (this.audioElement) {
       this.audioElement.volume = this.pausedVolume;
     }
   }
 
-  // ==============================
-  // ✅ 修复：返回 0-100 进度百分比
-  // ==============================
   public getCurrentTime(): number {
     return this.audioElement?.currentTime || 0;
   }
@@ -87,51 +76,132 @@ export class AudioEngine {
     }
   }
 
+  private getCacheKey(url: string): string {
+    return url;
+  }
+
   private async fetchAndCacheAudio(url: string): Promise<Blob> {
-    const cacheName = 'zensleep-audio-cache';
-    let response: Response | undefined;
-
+    const cacheKey = this.getCacheKey(url);
+    const cacheName = 'zensleep-audio-v2';
+    
+    if (this.blobCache.has(cacheKey)) {
+      console.log('[AudioEngine] ⚡⚡ 内存缓存命中，瞬间返回!');
+      return this.blobCache.get(cacheKey)!;
+    }
+    
     if ('caches' in window) {
-      const cache = await caches.open(cacheName);
-      response = await cache.match(url);
-      if (response && response.ok) {
-        return await response.blob();
+      try {
+        const cache = await caches.open(cacheName);
+        const cachedResponse = await cache.match(cacheKey);
+        
+        if (cachedResponse && cachedResponse.ok) {
+          console.log('[AudioEngine] ✅ 浏览器缓存命中');
+          const blob = await cachedResponse.blob();
+          this.blobCache.set(cacheKey, blob);
+          return blob;
+        }
+      } catch (e) {
+        console.warn('[AudioEngine] 缓存读取失败，继续网络请求', e);
       }
-
-      response = await fetch(url, { credentials: 'same-origin' });
-      if (!response.ok) {
-        throw new Error(`Failed to fetch audio file: ${url}`);
-      }
-      cache.put(url, response.clone()).catch(() => {});
-      return await response.blob();
     }
-
-    response = await fetch(url, { credentials: 'same-origin' });
+    
+    console.log('[AudioEngine] 📥 正在从网络下载音频:', url);
+    const startTime = performance.now();
+    
+    const response = await fetch(url, { 
+      cache: 'force-cache',
+      mode: 'cors',
+      credentials: 'same-origin'
+    });
+    
     if (!response.ok) {
-      throw new Error(`Failed to fetch audio file: ${url}`);
+      throw new Error(`音频下载失败: ${response.status}`);
     }
-    return await response.blob();
+    
+    const blob = await response.blob();
+    const downloadTime = (performance.now() - startTime) / 1000;
+    console.log(`[AudioEngine] ✅ 下载完成 (${downloadTime.toFixed(2)}s, ${(blob.size / 1024 / 1024).toFixed(2)}MB)`);
+    
+    this.blobCache.set(cacheKey, blob);
+    
+    if ('caches' in window) {
+      try {
+        const cache = await caches.open(cacheName);
+        const cacheResponse = new Response(blob, {
+          headers: {
+            'Content-Type': 'audio/mpeg',
+            'Cache-Control': 'public, max-age=31536000'
+          }
+        });
+        await cache.put(cacheKey, cacheResponse);
+        console.log('[AudioEngine] 💾 已存入浏览器缓存');
+      } catch (e) {
+        console.warn('[AudioEngine] 浏览器缓存存储失败', e);
+      }
+    }
+    
+    return blob;
+  }
+
+  public preloadAudio(audioPath: string): Promise<void> {
+    const url = audioPath;
+    const cacheKey = this.getCacheKey(url);
+    
+    if (this.preparingPromise.has(cacheKey)) {
+      console.log('[AudioEngine] 📦 音频已在准备中');
+      return this.preparingPromise.get(cacheKey)!;
+    }
+    
+    const preparePromise = this.doPreloadAudio(url);
+    this.preparingPromise.set(cacheKey, preparePromise);
+    
+    preparePromise.finally(() => {
+      this.preparingPromise.delete(cacheKey);
+    });
+    
+    return preparePromise;
+  }
+
+  private async doPreloadAudio(url: string): Promise<void> {
+    console.log('[AudioEngine] 📦 开始预加载:', url);
+    try {
+      await this.fetchAndCacheAudio(url);
+      console.log('[AudioEngine] 📦 预加载完成');
+    } catch (e) {
+      console.error('[AudioEngine] 预加载失败:', e);
+      throw e;
+    }
   }
 
   public async prepareAudioFile(audioPath: string): Promise<void> {
-    const resolvedPath = new URL(audioPath, window.location.href).href;
-    if (this.audioAssetPath === resolvedPath && this.audioElement) {
+    const url = audioPath;
+    const cacheKey = this.getCacheKey(url);
+    
+    console.log('[AudioEngine] 🎵 准备音频:', url);
+    
+    if (this.audioAssetPath === url && this.audioElement) {
+      console.log('[AudioEngine] ⚡ 音频已准备好');
       return;
     }
-
+    
     this.removeAudioEventListeners();
     if (this.audioBlobUrl) {
       URL.revokeObjectURL(this.audioBlobUrl);
       this.audioBlobUrl = null;
     }
-
-    this.audioAssetPath = resolvedPath;
-    const audioBlob = await this.fetchAndCacheAudio(resolvedPath);
+    
+    this.audioAssetPath = url;
+    
+    const audioBlob = await this.fetchAndCacheAudio(url);
     this.audioBlobUrl = URL.createObjectURL(audioBlob);
-
+    
     this.audioElement = new Audio(this.audioBlobUrl);
     this.audioElement.preload = 'auto';
     this.audioElement.volume = this.baseVolume;
+    
+    this.audioElement.load();
+    
+    console.log('[AudioEngine] ✅ 音频准备完成');
   }
 
   public async playLoadedAudio(): Promise<void> {
@@ -165,6 +235,7 @@ export class AudioEngine {
       audioElement.addEventListener('ended', handleEnded);
       audioElement.addEventListener('error', handleError);
 
+      console.log('[AudioEngine] ▶️ 开始播放');
       audioElement.play().catch(err => {
         cleanup();
         reject(err);
@@ -177,9 +248,6 @@ export class AudioEngine {
     return this.playLoadedAudio();
   }
 
-  // ==============================
-  // ✅ 新增：彻底停止音频（关闭会话用）
-  // ==============================
   public stop() {
     if (this.audioElement) {
       this.audioElement.pause();
@@ -194,9 +262,6 @@ export class AudioEngine {
     this.isPaused = false;
   }
 
-  // ==============================
-  // ✅ 新增：拖动进度条跳转
-  // ==============================
   public seek(time: number) {
     if (this.audioElement) {
       this.audioElement.currentTime = time;
@@ -219,6 +284,13 @@ export class AudioEngine {
     } catch (e) {
       console.error('Error during audio engine termination:', e);
     }
+  }
+
+  public getCacheInfo() {
+    return {
+      memoryCacheSize: this.blobCache.size,
+      memoryCacheKeys: Array.from(this.blobCache.keys())
+    };
   }
 }
 

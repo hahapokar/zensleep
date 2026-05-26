@@ -1,15 +1,15 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { Moon, Settings, ArrowRight, Music } from 'lucide-react';
+import { Moon, Settings, ArrowRight, Music, Waves } from 'lucide-react';
 
 interface InitialChoiceProps {
-  onModeSelect: (mode: 'nsdr' | 'sleep' | 'music') => void;
+  onModeSelect: (mode: 'nsdr' | 'sleep' | 'music' | 'whitenoise') => void;
 }
 
 export default function InitialChoice({ onModeSelect }: InitialChoiceProps) {
-  const [selectedMode, setSelectedMode] = useState<'nsdr' | 'sleep' | 'music' | null>(null);
+  const [selectedMode, setSelectedMode] = useState<'nsdr' | 'sleep' | 'music' | 'whitenoise' | null>(null);
 
-  const handleModeSelect = (mode: 'nsdr' | 'sleep' | 'music') => {
+  const handleModeSelect = (mode: 'nsdr' | 'sleep' | 'music' | 'whitenoise') => {
     setSelectedMode(mode);
     setTimeout(() => onModeSelect(mode), 600);
   };
@@ -121,13 +121,42 @@ export default function InitialChoice({ onModeSelect }: InitialChoiceProps) {
               </div>
             </div>
           </motion.button>
+
+          {/* 白噪音 */}
+          <motion.button
+            initial={{ opacity: 0, x: -20 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ duration: 0.5, delay: 0.7 }}
+            whileHover={{ scale: 1.02 }}
+            whileTap={{ scale: 0.98 }}
+            onClick={() => handleModeSelect('whitenoise')}
+            className={`w-full p-6 rounded-lg border-2 transition-all duration-300 ${
+              selectedMode === 'whitenoise'
+                ? 'border-emerald-400 bg-emerald-400/10'
+                : 'border-slate-700 bg-slate-800/50 hover:border-emerald-400/50'
+            }`}
+          >
+            <div className="text-left space-y-2">
+              <div className="flex items-center gap-2 mb-1">
+                <Waves size={18} className="text-emerald-400" />
+                <h3 className="text-slate-100 font-semibold text-lg">白噪音</h3>
+              </div>
+              <p className="text-slate-400 text-sm">
+                自然白噪音，包括营火、雷声、海浪、水滴等，营造宁静的睡眠环境。
+              </p>
+              <div className="flex items-center gap-2 text-emerald-400 text-sm mt-3">
+                <span>选择声音</span>
+                <ArrowRight size={16} />
+              </div>
+            </div>
+          </motion.button>
         </div>
 
         {/* 底部信息 */}
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
-          transition={{ duration: 0.6, delay: 0.6 }}
+          transition={{ duration: 0.6, delay: 0.7 }}
           className="text-center text-slate-500 text-xs pt-4"
         >
           <p></p>

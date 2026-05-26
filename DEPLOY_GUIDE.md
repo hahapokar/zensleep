@@ -1,93 +1,180 @@
-# 部署指南
+# ZenSleep 自动部署指南
 
-## npm run deploy 故障排除
+## 🚀 快速开始
 
-### 问题：SSH 连接被重置或 DNS 解析失败
+### 方法一：使用自动部署脚本（推荐）
 
-#### 解决方案 1：使用 GitHub CLI (推荐)
-
-1. 安装 GitHub CLI:
 ```bash
-brew install gh
+cd /Users/patrick/Desktop/软件/zensleep
+bash auto-deploy.sh
 ```
 
-2. 登录 GitHub:
-```bash
-gh auth login
-```
+脚本会自动完成以下步骤：
+1. ✅ 检查优化文件
+2. ✅ 安装依赖
+3. ✅ 类型检查
+4. ✅ 构建项目
+5. ✅ 部署到 GitHub Pages
+6. ✅ 显示访问地址
 
-3. 运行部署脚本:
-```bash
-npm run build && gh-pages -d dist --nojekyll
-```
-
-#### 解决方案 2：使用 Personal Access Token (HTTPS)
-
-1. 在 GitHub 创建 Personal Access Token:
-   - 访问 https://github.com/settings/tokens
-   - 创建新 token，选择 `public_repo` 权限
-   - 复制 token
-
-2. 配置 git 凭证:
-```bash
-# 方法 A: 使用 credential manager
-git config --global credential.helper osxkeychain
-# 然后运行部署，会提示输入用户名和 token
-
-# 方法 B: 直接在 URL 中设置 (不推荐，不安全)
-# git remote set-url origin https://<username>:<token>@github.com/hahapokar/zensleep.git
-```
-
-3. 运行部署:
-```bash
-npm run deploy
-```
-
-#### 解决方案 3：修复 SSH 密钥
-
-1. 生成或检查 SSH 密钥:
-```bash
-ssh-keygen -t ed25519 -C "your_email@example.com"
-```
-
-2. 添加到 GitHub:
-   - https://github.com/settings/keys
-   - 复制公钥内容 (`~/.ssh/id_ed25519.pub`)
-   - 添加为新 SSH 密钥
-
-3. 测试 SSH 连接:
-```bash
-ssh -T git@github.com
-```
-
-4. 确保使用 SSH 远程 URL:
-```bash
-git remote set-url origin git@github.com:hahapokar/zensleep.git
-npm run deploy
-```
-
-### 网络问题排除
-
-1. 测试网络连接:
-```bash
-ping github.com
-```
-
-2. 如果 DNS 解析失败，尝试使用其他 DNS:
-```bash
-# 临时使用 Google DNS
-networksetup -setdnsservers Wi-Fi 8.8.8.8 8.8.4.4
-```
-
-3. 检查防火墙/代理设置
-
-### 验证部署
-
-部署成功后，访问: https://hahapokar.github.io/zensleep
-
-## 本地部署测试
+### 方法二：手动部署
 
 ```bash
+# 1. 安装依赖
+npm install
+
+# 2. 类型检查
+npm run lint
+
+# 3. 构建
 npm run build
-npm run preview  # 在 http://localhost:4173 预览
+
+# 4. 部署
+npm run deploy
 ```
+
+## 📋 文件结构
+
+```
+zensleep/
+├── src/
+│   ├── lib/
+│   │   └── AudioEngine.ts    ← 优化缓存机制
+│   ├── components/            ← UI 组件
+│   ├── App.tsx                ← 主应用（含 iOS 兼容）
+│   └── ...
+├── auto-deploy.sh            ← 一键部署脚本
+└── package.json
+```
+
+## 🎯 优化功能
+
+### 1. WakeLock 智能管理
+- **问题**：用户切换标签页时，WakeLock 会自动释放
+- **解决**：监听 `visibilitychange` 事件，页面重新可见时自动重新申请
+- **效果**：屏幕常亮，不会意外熄灭
+
+```javascript
+// App.tsx 中的实现
+useEffect(() => {
+  const handleVisibilityChange = async () => {
+    if (document.visibilityState === 'visible' && isPlaying) {
+      await requestWakeLock();
+      startScreenAutoOff();
+    }
+  };
+  document.addEventListener('visibilitychange', handleVisibilityChange);
+}, [isPlaying, requestWakeLock]);
+```
+
+### 2. 音频加载状态反馈
+- **问题**：用户不知道音频是否加载完成
+- **解决**：显示加载动画，禁用按钮直到音频就绪
+- **效果**：更好的用户体验
+
+```javascript
+// 新增状态
+const [isAudioReady, setIsAudioReady] = useState(false);
+
+// 按钮状态
+<button disabled={!isAudioReady}>
+  {!isAudioReady ? '正在加载音频...' : '开始睡眠引导'}
+</button>
+```
+
+### 3. iOS Safari 兼容
+- **问题**：iOS Safari 不支持 `requestFullscreen()` API
+- **解决**：自动检测 iOS 设备，使用 CSS 伪全屏模式
+- **效果**：在 iPhone/iPad 上也能全屏播放
+
+```javascript
+// iOS 检测
+const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
+
+// CSS 伪全屏
+body.force-fullscreen {
+  height: 100dvh;
+  overflow: hidden;
+  position: fixed;
+}
+```
+
+### 4. 三层缓存机制
+- **内存缓存**：同一页面会话，最快
+- **浏览器缓存**：Cache API，持久化
+- **HTTP 缓存**：利用 CDN 缓存
+
+## 🔧 调试技巧
+
+### 查看控制台日志
+
+1. 打开浏览器开发者工具 (F12)
+2. 切换到 Console 标签
+3. 查看以下日志：
+
+```
+[App] WakeLock 已申请
+[App] 音频已准备就绪
+[AudioEngine] ⚡⚡ 内存缓存命中，瞬间返回!   ← 第三次访问
+[AudioEngine] ✅ 浏览器缓存命中             ← 第二次访问
+[AudioEngine] 📥 正在从网络下载音频: ...    ← 第一次访问
+[App] 页面重新可见，重新申请 WakeLock        ← 切换标签后
+```
+
+### 清除缓存
+
+如果遇到缓存问题，可以：
+
+1. **清除浏览器缓存**
+   - Mac: `Cmd + Shift + Delete`
+   - Windows: `Ctrl + Shift + Delete`
+
+2. **清除特定网站缓存**
+   - 打开开发者工具
+   - 右键点击刷新按钮
+   - 选择 "清空缓存并硬性重新加载"
+
+## 📊 性能预期
+
+| 访问次数 | 加载方式 | 预计时间 |
+|---------|---------|---------|
+| 第一次 | 下载音频（~30MB） | 10-30 秒 |
+| 第二次 | 浏览器缓存 | 1-3 秒 |
+| 第三次 | 内存缓存 | < 0.1 秒 |
+
+## 🐛 常见问题
+
+### Q: 部署后还是慢？
+A: 
+1. 确认音频文件已上传到 Cloudflare R2
+2. 检查浏览器控制台是否有缓存日志
+3. 尝试清除浏览器缓存后重新访问
+
+### Q: iOS 上无法全屏？
+A: 这是正常的，iOS Safari 不支持全屏 API。脚本会自动使用 CSS 伪全屏模式。
+
+### Q: WakeLock 不工作？
+A: 
+1. 确认在 HTTPS 环境下访问
+2. 确认浏览器支持 WakeLock API
+3. 检查控制台是否有相关日志
+
+### Q: 音频加载失败？
+A: 
+1. 确认 Cloudflare R2 bucket 设置为 Public
+2. 检查音频文件 URL 是否正确
+3. 查看控制台错误信息
+
+## 📞 技术支持
+
+如果遇到其他问题，请查看：
+- [Cloudflare R2 文档](https://developers.cloudflare.com/r2/)
+- [GitHub Pages 文档](https://docs.github.com/en/pages)
+- [浏览器控制台日志](#调试技巧)
+
+---
+
+**版本**: v2.0  
+**更新日期**: 2026-05-25  
+**作者**: AI Assistant  
+**许可证**: MIT

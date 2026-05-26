@@ -1,12 +1,13 @@
 import { useState, useCallback, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { Moon, ChevronLeft } from 'lucide-react';
+import { Moon, ChevronLeft, Loader2 } from 'lucide-react';
 import { audioEngine } from './lib/AudioEngine';
 import { ContentManager, ContentConfig } from './lib/ContentManager';
 import InitialChoice from './components/InitialChoice';
 import NSDRDurationSelector from './components/NSDRDurationSelector';
 import SleepOptionSelector from './components/SleepOptionSelector';
 import MusicDurationSelector from './components/MusicDurationSelector';
+import WhiteNoiseOptionSelector from './components/WhiteNoiseOptionSelector';
 import ZenSleepSession from './components/ZenSleepSession';
 
 type AppStage =
@@ -14,14 +15,16 @@ type AppStage =
   | 'NSDR_DURATION_SELECTOR'
   | 'SLEEP_OPTION_SELECTOR'
   | 'MUSIC_DURATION_SELECTOR'
+  | 'WHITENOISE_OPTION_SELECTOR'
   | 'SESSION_PREP'
   | 'ZENSLEEP';
 
 interface UserConfig {
-  mode: 'nsdr' | 'sleep' | 'music';
+  mode: 'nsdr' | 'sleep' | 'music' | 'whitenoise';
   duration?: number;
   sleepOption?: string;
   musicOption?: string;
+  whitenoiseOption?: string;
   contentConfig?: ContentConfig;
 }
 
@@ -32,39 +35,82 @@ export default function ZenSleepApp() {
   const [isScreenOn, setIsScreenOn] = useState(true);
   const [isPlaybackStarted, setIsPlaybackStarted] = useState(false);
   const [isPlaying, setIsPlaying] = useState(false);
+  const [isAudioReady, setIsAudioReady] = useState(false);
+  const [audioLoadingProgress, setAudioLoadingProgress] = useState(0);
   const screenTimerRef = useRef<NodeJS.Timeout | null>(null);
   const timerRef = useRef<NodeJS.Timeout | null>(null);
   const wakeLockRef = useRef<WakeLockSentinel | null>(null);
+  const isIOSRef = useRef(false);
 
-  // --- 全屏 ---
+  useEffect(() => {
+    isIOSRef.current = /iPad|iPhone|iPod/.test(navigator.userAgent) || 
+                       (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+    
+    if (isIOSRef.current) {
+      document.body.style.setProperty('--fullscreen-height', '100dvh');
+      document.body.classList.add('ios-fullscreen');
+    }
+  }, []);
+
   const enterFullscreen = async () => {
+    if (isIOSRef.current) {
+      console.log('[App] iOS 设备，使用 CSS 全屏模式');
+      document.body.classList.add('force-fullscreen');
+      return;
+    }
+
     try {
-      await document.documentElement.requestFullscreen();
-    } catch (e) {}
+      if (document.fullscreenElement === null) {
+        await document.documentElement.requestFullscreen();
+      }
+    } catch (e) {
+      console.warn('[App] 全屏模式不可用:', e);
+    }
   };
 
   const exitFullscreen = () => {
+    if (isIOSRef.current) {
+      document.body.classList.remove('force-fullscreen');
+      return;
+    }
     try {
       if (document.fullscreenElement) document.exitFullscreen();
     } catch (e) {}
   };
 
-  // --- 屏幕常亮锁（播放时保持不息屏，结束立刻释放）---
   const requestWakeLock = useCallback(async () => {
     try {
       if ('wakeLock' in navigator) {
         wakeLockRef.current = await navigator.wakeLock.request('screen');
+        console.log('[App] WakeLock 已申请');
       }
-    } catch (e) {}
+    } catch (e) {
+      console.warn('[App] WakeLock 申请失败:', e);
+    }
   }, []);
 
   const releaseWakeLock = useCallback(() => {
     try {
-      if (wakeLockRef.current) wakeLockRef.current.release();
+      if (wakeLockRef.current) {
+        wakeLockRef.current.release();
+        console.log('[App] WakeLock 已释放');
+      }
     } catch (e) {}
   }, []);
 
-  // --- 自动熄屏（5秒黑）---
+  useEffect(() => {
+    const handleVisibilityChange = async () => {
+      if (document.visibilityState === 'visible' && isPlaying) {
+        console.log('[App] 页面重新可见，重新申请 WakeLock');
+        await requestWakeLock();
+        startScreenAutoOff();
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
+  }, [isPlaying, requestWakeLock]);
+
   const startScreenAutoOff = useCallback(() => {
     if (screenTimerRef.current) clearTimeout(screenTimerRef.current);
     setIsScreenOn(true);
@@ -75,7 +121,6 @@ export default function ZenSleepApp() {
     startScreenAutoOff();
   }, [startScreenAutoOff]);
 
-  // --- 彻底清理所有资源 ---
   const resetSession = useCallback(() => {
     if (timerRef.current) clearInterval(timerRef.current);
     if (screenTimerRef.current) clearTimeout(screenTimerRef.current);
@@ -92,6 +137,8 @@ export default function ZenSleepApp() {
     setIsScreenOn(true);
     setIsPlaybackStarted(false);
     setIsPlaying(false);
+    setIsAudioReady(false);
+    setAudioLoadingProgress(0);
   }, [releaseWakeLock]);
 
   const finishSession = useCallback(() => {
@@ -110,15 +157,15 @@ export default function ZenSleepApp() {
     setIsScreenOn(false);
     setIsPlaybackStarted(false);
     setIsPlaying(false);
+    setIsAudioReady(false);
+    setAudioLoadingProgress(0);
   }, [releaseWakeLock]);
 
-  // --- 退出会话（手动）---
   const handleExitSession = useCallback(() => {
     resetSession();
     setAppStage('INITIAL_CHOICE');
   }, [resetSession]);
 
-  // --- 拖动进度条 ---
   const handleSeekProgress = useCallback((progress: number) => {
     if (!userConfig.contentConfig) return;
     const total = userConfig.contentConfig.sessionDuration;
@@ -127,9 +174,13 @@ export default function ZenSleepApp() {
     setSessionProgress(progress);
   }, [userConfig.contentConfig]);
 
-  // --- 播放/暂停按钮 ---
   const startPlayback = useCallback(async () => {
     if (isPlaybackStarted) return;
+    if (!isAudioReady) {
+      console.log('[App] 音频还在加载中，请稍候...');
+      return;
+    }
+
     setIsPlaybackStarted(true);
     setIsPlaying(true);
 
@@ -149,11 +200,11 @@ export default function ZenSleepApp() {
         await audioEngine.playLoadedAudio();
       }
     } catch (error) {
-      console.error('Playback error:', error);
+      console.error('[App] 播放错误:', error);
     } finally {
       finishSession();
     }
-  }, [finishSession, isPlaybackStarted, requestWakeLock, startScreenAutoOff, userConfig.contentConfig]);
+  }, [finishSession, isAudioReady, isPlaybackStarted, requestWakeLock, startScreenAutoOff, userConfig.contentConfig]);
 
   const handlePlayPauseToggle = useCallback(() => {
     if (!isPlaybackStarted) {
@@ -169,22 +220,33 @@ export default function ZenSleepApp() {
     setIsPlaying(!isPlaying);
   }, [isPlaybackStarted, isPlaying, startPlayback]);
 
-  // --- 选择模式 ---
-  const handleModeSelect = (mode: 'nsdr' | 'sleep' | 'music') => {
+  const handleModeSelect = (mode: 'nsdr' | 'sleep' | 'music' | 'whitenoise') => {
     setUserConfig({ mode });
     if (mode === 'nsdr') setAppStage('NSDR_DURATION_SELECTOR');
     else if (mode === 'sleep') setAppStage('SLEEP_OPTION_SELECTOR');
     else if (mode === 'music') setAppStage('MUSIC_DURATION_SELECTOR');
+    else if (mode === 'whitenoise') setAppStage('WHITENOISE_OPTION_SELECTOR');
   };
 
   const handleNSDRDurationSelect = (duration: number) => {
     const contentConfig = ContentManager.generateContentConfig('balanced', ['nsdr'], duration);
     setUserConfig(prev => ({ ...prev, duration, contentConfig }));
     setAppStage('SESSION_PREP');
+    setIsAudioReady(false);
+    setAudioLoadingProgress(0);
     
-    // 异步预加载音频文件，不阻塞UI过渡
     if (contentConfig.audioFile) {
-      audioEngine.prepareAudioFile(contentConfig.audioFile).catch(console.warn);
+      audioEngine.prepareAudioFile(contentConfig.audioFile)
+        .then(() => {
+          setIsAudioReady(true);
+          setAudioLoadingProgress(100);
+          console.log('[App] 音频已准备就绪');
+        })
+        .catch((err) => {
+          console.error('[App] 音频预加载失败:', err);
+        });
+    } else {
+      setIsAudioReady(true);
     }
   };
 
@@ -192,10 +254,21 @@ export default function ZenSleepApp() {
     const contentConfig = ContentManager.generateContentConfig('balanced', ['sleep'], undefined, optionId);
     setUserConfig(prev => ({ ...prev, sleepOption: optionId, contentConfig }));
     setAppStage('SESSION_PREP');
+    setIsAudioReady(false);
+    setAudioLoadingProgress(0);
     
-    // 异步预加载音频文件，不阻塞UI过渡
     if (contentConfig.audioFile) {
-      audioEngine.prepareAudioFile(contentConfig.audioFile).catch(console.warn);
+      audioEngine.prepareAudioFile(contentConfig.audioFile)
+        .then(() => {
+          setIsAudioReady(true);
+          setAudioLoadingProgress(100);
+          console.log('[App] 音频已准备就绪');
+        })
+        .catch((err) => {
+          console.error('[App] 音频预加载失败:', err);
+        });
+    } else {
+      setIsAudioReady(true);
     }
   };
 
@@ -203,14 +276,46 @@ export default function ZenSleepApp() {
     const contentConfig = ContentManager.generateContentConfig('balanced', ['music'], undefined, undefined, musicOption);
     setUserConfig(prev => ({ ...prev, musicOption, contentConfig }));
     setAppStage('SESSION_PREP');
+    setIsAudioReady(false);
+    setAudioLoadingProgress(0);
     
-    // 异步预加载音频文件，不阻塞UI过渡
     if (contentConfig.audioFile) {
-      audioEngine.prepareAudioFile(contentConfig.audioFile).catch(console.warn);
+      audioEngine.prepareAudioFile(contentConfig.audioFile)
+        .then(() => {
+          setIsAudioReady(true);
+          setAudioLoadingProgress(100);
+          console.log('[App] 音频已准备就绪');
+        })
+        .catch((err) => {
+          console.error('[App] 音频预加载失败:', err);
+        });
+    } else {
+      setIsAudioReady(true);
     }
   };
 
-  // --- 核心：开始播放 ---
+  const handleWhiteNoiseOptionSelect = (whitenoiseOption: string) => {
+    const contentConfig = ContentManager.generateContentConfig('balanced', ['whitenoise'], undefined, undefined, undefined, whitenoiseOption);
+    setUserConfig(prev => ({ ...prev, whitenoiseOption, contentConfig }));
+    setAppStage('SESSION_PREP');
+    setIsAudioReady(false);
+    setAudioLoadingProgress(0);
+    
+    if (contentConfig.audioFile) {
+      audioEngine.prepareAudioFile(contentConfig.audioFile)
+        .then(() => {
+          setIsAudioReady(true);
+          setAudioLoadingProgress(100);
+          console.log('[App] 音频已准备就绪');
+        })
+        .catch((err) => {
+          console.error('[App] 音频预加载失败:', err);
+        });
+    } else {
+      setIsAudioReady(true);
+    }
+  };
+
   const runSession = async () => {
     if (!userConfig.contentConfig) return;
 
@@ -218,7 +323,7 @@ export default function ZenSleepApp() {
       try {
         await audioEngine.prepareAudioFile(userConfig.contentConfig.audioFile);
       } catch (error) {
-        console.error(error);
+        console.error('[App] 音频加载失败:', error);
       }
     }
 
@@ -231,13 +336,32 @@ export default function ZenSleepApp() {
     setIsPlaying(false);
   };
 
-  // --- 页面卸载强制清理 ---
   useEffect(() => {
     return () => resetSession();
   }, [resetSession]);
 
   return (
     <div className="fixed inset-0 min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 text-slate-100">
+      <style>{`
+        body.ios-fullscreen {
+          height: 100dvh;
+          overflow: hidden;
+          position: fixed;
+          width: 100vw;
+        }
+        
+        body.force-fullscreen {
+          height: 100vh;
+          height: 100dvh;
+          overflow: hidden;
+          position: fixed;
+          width: 100vw;
+          top: 0;
+          left: 0;
+          z-index: 99999;
+        }
+      `}</style>
+      
       <AnimatePresence mode="wait">
         {appStage === 'INITIAL_CHOICE' && <InitialChoice onModeSelect={handleModeSelect} />}
 
@@ -262,6 +386,13 @@ export default function ZenSleepApp() {
           />
         )}
 
+        {appStage === 'WHITENOISE_OPTION_SELECTOR' && (
+          <WhiteNoiseOptionSelector
+            onOptionSelect={handleWhiteNoiseOptionSelect}
+            onBack={() => setAppStage('INITIAL_CHOICE')}
+          />
+        )}
+
         {appStage === 'SESSION_PREP' && (
           <motion.div key="prep" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="w-full h-full flex items-center justify-center p-6">
             <div className="text-center space-y-10 max-w-md">
@@ -276,19 +407,50 @@ export default function ZenSleepApp() {
                     预计时长: {Math.floor(userConfig.contentConfig.sessionDuration / 60)} 分钟
                   </p>
                 )}
+                
+                {!isAudioReady && (
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-center gap-2 text-sm text-slate-400">
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                      <span>正在加载音频...</span>
+                    </div>
+                    <div className="w-full bg-slate-800 rounded-full h-1.5 overflow-hidden">
+                      <div 
+                        className="bg-emerald-500 h-full transition-all duration-300"
+                        style={{ width: '100%' }}
+                      />
+                    </div>
+                  </div>
+                )}
+                
                 <p className="text-slate-500 text-xs leading-relaxed px-8">
+                  {isAudioReady ? '音频已准备就绪，可以开始播放。' : '正在预加载音频，请稍候...'}
                   第一次播放需要时间缓存，以后即可迅速打开播放。开始后屏幕会自动熄屏。点击任意位置可重新点亮屏幕。播放结束后会自动退出程序，不需要任何操作。祝您有个好梦。
                 </p>
               </div>
 
               <div className="flex flex-col items-center gap-6">
                 <motion.button
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
+                  whileHover={isAudioReady ? { scale: 1.05 } : {}}
+                  whileTap={isAudioReady ? { scale: 0.95 } : {}}
                   onClick={runSession}
-                  className="px-12 py-4 rounded-full bg-emerald-500 text-white font-medium shadow-lg shadow-emerald-900/20"
+                  disabled={!isAudioReady}
+                  className={`px-12 py-4 rounded-full font-medium shadow-lg transition-all ${
+                    isAudioReady 
+                      ? 'bg-emerald-500 text-white shadow-emerald-900/20 cursor-pointer' 
+                      : 'bg-slate-700 text-slate-500 cursor-not-allowed'
+                  }`}
                 >
-                  {userConfig.mode === 'sleep' ? '开始睡眠引导' : userConfig.mode === 'nsdr' ? '开始放松引导' : '开始音乐陪伴'}
+                  {!isAudioReady ? (
+                    <span className="flex items-center gap-2">
+                      <Loader2 className="w-5 h-5 animate-spin" />
+                      正在加载音频...
+                    </span>
+                  ) : (
+                    userConfig.mode === 'sleep' ? '开始睡眠引导' : 
+                    userConfig.mode === 'nsdr' ? '开始放松引导' : 
+                    userConfig.mode === 'whitenoise' ? '开始白噪音' : '开始音乐陪伴'
+                  )}
                 </motion.button>
 
                 <button

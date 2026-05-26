@@ -4,7 +4,7 @@
  */
 
 // 脚本类型定义
-export type SymptomType = 'nsdr' | 'sleep' | 'music';
+export type SymptomType = 'nsdr' | 'sleep' | 'music' | 'whitenoise';
 
 export interface SymptomScript {
   key: string;
@@ -70,6 +70,13 @@ const SLEEP_SCRIPTS: Record<string, SymptomScript> = {
     duration: 1800, // 30分钟
     emotion: 'warm',
   },
+  'sleep-buddha': {
+    key: 'sleep-buddha',
+    title: '禅定 · 佛陀助眠',
+    content: ['宁静的禅意，帮助你安然入睡'],
+    duration: 1800, // 30分钟
+    emotion: 'calm',
+  },
 };
 
 // 背景音乐助眠脚本定义
@@ -97,11 +104,51 @@ const MUSIC_SCRIPTS: Record<string, SymptomScript> = {
   },
 };
 
+// 白噪音助眠脚本定义
+const WHITENOISE_SCRIPTS: Record<string, SymptomScript> = {
+  'whitenoise-campfire': {
+    key: 'whitenoise-campfire',
+    title: '营火 · 温暖相伴',
+    content: ['噼里啪啦的营火声，温暖而宁静'],
+    duration: 1800, // 30分钟
+    emotion: 'warm',
+  },
+  'whitenoise-thunder': {
+    key: 'whitenoise-thunder',
+    title: '雷声 · 大自然怒吼',
+    content: ['远处的雷声，带来安心的雨声'],
+    duration: 1800, // 30分钟
+    emotion: 'calm',
+  },
+  'whitenoise-nature': {
+    key: 'whitenoise-nature',
+    title: '自然 · 鸟语花香',
+    content: ['大自然的声音，放松身心'],
+    duration: 1800, // 30分钟
+    emotion: 'soothing',
+  },
+  'whitenoise-wave': {
+    key: 'whitenoise-wave',
+    title: '海浪 · 潮起潮落',
+    content: ['海浪的声音，带来大海的气息'],
+    duration: 1800, // 30分钟
+    emotion: 'calm',
+  },
+  'whitenoise-waterdrop': {
+    key: 'whitenoise-waterdrop',
+    title: '水滴 · 滴水穿石',
+    content: ['清澈的水滴声，静心宁神'],
+    duration: 1800, // 30分钟
+    emotion: 'soothing',
+  },
+};
+
 // 兼容性：保留旧的 SCRIPTS 结构用于向后兼容
 export const SCRIPTS: Record<string, SymptomScript> = {
   ...NSDR_SCRIPTS,
   ...SLEEP_SCRIPTS,
   ...MUSIC_SCRIPTS,
+  ...WHITENOISE_SCRIPTS,
 };
 
 /**
@@ -118,6 +165,8 @@ export class ScriptManager {
       return SLEEP_SCRIPTS[scriptKey] || null;
     } else if (symptom === 'music') {
       return MUSIC_SCRIPTS[scriptKey] || null;
+    } else if (symptom === 'whitenoise') {
+      return WHITENOISE_SCRIPTS[scriptKey] || null;
     }
     return null;
   }
@@ -133,7 +182,7 @@ export class ScriptManager {
     let script: SymptomScript | null = null;
 
     // 如果指定了症状，从对应症状的脚本中查找
-    if (symptom && (symptom === 'nsdr' || symptom === 'sleep' || symptom === 'music')) {
+    if (symptom && (symptom === 'nsdr' || symptom === 'sleep' || symptom === 'music' || symptom === 'whitenoise')) {
       script = this.getScriptBySymptomAndKey(symptom as SymptomType, scriptKey);
     }
 
@@ -174,6 +223,8 @@ export class ScriptManager {
     const sequences: Record<string, string[]> = {
       nsdr: ['nsdr-power-recharge'],
       sleep: ['sleep-clear-mind'],
+      music: ['music-balanced'],
+      whitenoise: ['whitenoise-nature'],
     };
 
     return sequences[symptom] || sequences.sleep;

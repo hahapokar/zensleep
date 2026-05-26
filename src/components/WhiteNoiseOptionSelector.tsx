@@ -1,50 +1,56 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { Check, ChevronLeft } from 'lucide-react';
+import { Check, ChevronLeft, Flame, Zap, Wind, Waves, Droplets } from 'lucide-react';
 
-interface SleepOption {
+interface WhiteNoiseOption {
   id: string;
   name: string;
   description: string;
-  target: string;
+  icon: React.ReactNode;
 }
 
-const SLEEP_OPTIONS: SleepOption[] = [
+const WHITENOISE_OPTIONS: WhiteNoiseOption[] = [
   {
-    id: 'clear-mind',
-    name: '清脑 · 卸载繁杂 (30分钟)',
-    description: '帮助大脑停止转动，释放压力。适合思维活跃、难以入睡的用户',
-    target: '大脑转不停、压力大的用户',
+    id: 'campfire',
+    name: '营火 · 温暖相伴 (30分钟)',
+    description: '噼里啪啦的营火声，温暖而宁静，营造户外露营的氛围',
+    icon: <Flame size={20} />,
   },
   {
-    id: 'relax-body',
-    name: '舒体 · 融化酸累 (30分钟)',
-    description: '缓解身体疲劳，放松肌肉酸痛。适合身体疲惫、需要深度放松的用户',
-    target: '身体极度疲惫、腰酸背痛的用户',
+    id: 'thunder',
+    name: '雷声 · 自然怒吼 (30分钟)',
+    description: '远处的雷声，伴着雨声，带来宁静和安全感',
+    icon: <Zap size={20} />,
   },
   {
-    id: 'calm-heart',
-    name: '定心 · 安全避风港 (30分钟)',
-    description: '提供心理安全感，抚平焦虑。适合内心不安、需要情感支持的用户',
-    target: '内心焦虑、受挫、需要心理安全感的用户',
+    id: 'nature',
+    name: '自然 · 鸟语花香 (30分钟)',
+    description: '大自然的声音，包括鸟叫、流水，放松身心',
+    icon: <Wind size={20} />,
   },
   {
-    id: 'buddha',
-    name: '禅定 · 佛陀助眠 (30分钟)',
-    description: '宁静的禅意，帮助您安然入睡。适合喜欢安静禅修氛围的用户',
-    target: '喜欢禅修、需要宁静氛围的用户',
+    id: 'wave',
+    name: '海浪 · 潮起潮落 (30分钟)',
+    description: '海浪的声音，带来大海的气息，帮助平静入睡',
+    icon: <Waves size={20} />,
+  },
+  {
+    id: 'waterdrop',
+    name: '水滴 · 滴水穿石 (30分钟)',
+    description: '清澈的水滴声，静心宁神，适合冥想和睡眠',
+    icon: <Droplets size={20} />,
   },
 ];
 
-interface SleepOptionSelectorProps {
+interface WhiteNoiseOptionSelectorProps {
   onOptionSelect: (optionId: string) => void;
   onBack?: () => void;
 }
 
-export default function SleepOptionSelector({
+export default function WhiteNoiseOptionSelector({
   onOptionSelect,
   onBack,
-}: SleepOptionSelectorProps) {
+}: WhiteNoiseOptionSelectorProps) {
   const [selectedOption, setSelectedOption] = useState<string | null>(null);
   const [isConfirming, setIsConfirming] = useState(false);
 
@@ -87,16 +93,16 @@ export default function SleepOptionSelector({
           {/* 标题 */}
           <div>
             <h1 className="text-4xl font-light text-slate-100 mb-2">
-              选择夜晚助眠模式
+              选择白噪音模式
             </h1>
             <p className="text-slate-400">
-              根据您的当前状态选择最适合的夜晚睡眠引导模式
+              根据您的喜好选择适合的白噪音来帮助您入睡
             </p>
           </div>
 
           {/* 选项网格 */}
           <div className="space-y-3 max-h-[calc(100vh-400px)] overflow-y-auto px-1">
-            {SLEEP_OPTIONS.map((option, index) => (
+            {WHITENOISE_OPTIONS.map((option, index) => (
               <motion.button
                 key={option.id}
                 initial={{ opacity: 0, scale: 0.9 }}
@@ -124,15 +130,20 @@ export default function SleepOptionSelector({
                     )}
                   </div>
                   <div className="flex-1 min-w-0">
-                    <h3
-                      className={`font-medium text-base leading-tight ${
-                        selectedOption === option.id
-                          ? 'text-emerald-100'
-                          : 'text-slate-200'
-                      }`}
-                    >
-                      {option.name}
-                    </h3>
+                    <div className="flex items-center gap-2 mb-1">
+                      <span className={selectedOption === option.id ? 'text-emerald-400' : 'text-slate-500'}>
+                        {option.icon}
+                      </span>
+                      <h3
+                        className={`font-medium text-base leading-tight ${
+                          selectedOption === option.id
+                            ? 'text-emerald-100'
+                            : 'text-slate-200'
+                        }`}
+                      >
+                        {option.name}
+                      </h3>
+                    </div>
                     <p className="text-slate-400 text-xs mt-1 leading-relaxed line-clamp-2">
                       {option.description}
                     </p>
@@ -145,7 +156,7 @@ export default function SleepOptionSelector({
           {/* 提示 */}
           <div className="p-4 rounded-lg bg-slate-800/50 border-l-2 border-emerald-400">
             <p className="text-slate-300 text-sm">
-              💡 提示：选择最符合您当前需求的模式，系统会根据您的选择调整引导语和音乐来帮助您快速入睡。
+              💡 提示：白噪音可以帮助屏蔽环境噪音，创造一个宁静的睡眠环境。选择您喜欢的声音开始吧！
             </p>
           </div>
         </motion.div>

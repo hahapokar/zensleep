@@ -26,7 +26,8 @@ export class ContentManager {
     symptoms: string[],
     nsdrDuration?: number,
     sleepOption?: string,
-    musicOption?: string
+    musicOption?: string,
+    whitenoiseOption?: string
   ): ContentConfig {
     const voiceSettings = { rate: 0.5, pitch: 0.6 };
 
@@ -39,9 +40,12 @@ export class ContentManager {
     } else if (symptoms.includes('music') && musicOption) {
       const script = SCRIPTS[`music-${musicOption}`];
       sessionDuration = script?.duration || 1200;
+    } else if (symptoms.includes('whitenoise') && whitenoiseOption) {
+      const script = SCRIPTS[`whitenoise-${whitenoiseOption}`];
+      sessionDuration = script?.duration || 1800;
     }
 
-    const scriptSequence = this.buildScriptSequence(constitution, symptoms, nsdrDuration, sleepOption, musicOption);
+    const scriptSequence = this.buildScriptSequence(constitution, symptoms, nsdrDuration, sleepOption, musicOption, whitenoiseOption);
     
     // ==============================================
     // 关键：你不需要额外音乐，直接清空 musicTracks
@@ -62,6 +66,8 @@ export class ContentManager {
       audioFile = `${CLOUDFLARE_R2_URL}sleep-${sleepOption}.mp3`;
     } else if (symptoms.includes('music') && musicOption) {
       audioFile = `${CLOUDFLARE_R2_URL}music-${musicOption}.mp3`;
+    } else if (symptoms.includes('whitenoise') && whitenoiseOption) {
+      audioFile = `${CLOUDFLARE_R2_URL}${whitenoiseOption}.mp3`;
     }
 
     return {
@@ -80,11 +86,12 @@ export class ContentManager {
     symptoms: string[],
     nsdrDuration?: number,
     sleepOption?: string,
-    musicOption?: string
+    musicOption?: string,
+    whitenoiseOption?: string
   ): string[] {
     if (symptoms.length > 0) {
       const primarySymptom = symptoms[0];
-      const validSymptoms = ['nsdr', 'sleep', 'music'];
+      const validSymptoms = ['nsdr', 'sleep', 'music', 'whitenoise'];
       if (validSymptoms.includes(primarySymptom)) {
         if (primarySymptom === 'nsdr') {
           if (nsdrDuration === 600) {
@@ -99,6 +106,7 @@ export class ContentManager {
             'clear-mind': ['sleep-clear-mind'],
             'relax-body': ['sleep-relax-body'],
             'calm-heart': ['sleep-calm-heart'],
+            'buddha': ['sleep-buddha'],
           };
           return sleepSequences[sleepOption] || ScriptManager.getRecommendedScriptSequence('sleep');
         } else if (primarySymptom === 'music' && musicOption) {
@@ -108,6 +116,15 @@ export class ContentManager {
             'deep': ['music-deep'],
           };
           return musicSequences[musicOption] || ScriptManager.getRecommendedScriptSequence('music');
+        } else if (primarySymptom === 'whitenoise' && whitenoiseOption) {
+          const whitenoiseSequences: Record<string, string[]> = {
+            'campfire': ['whitenoise-campfire'],
+            'thunder': ['whitenoise-thunder'],
+            'nature': ['whitenoise-nature'],
+            'wave': ['whitenoise-wave'],
+            'waterdrop': ['whitenoise-waterdrop'],
+          };
+          return whitenoiseSequences[whitenoiseOption] || ScriptManager.getRecommendedScriptSequence('whitenoise');
         }
         return ScriptManager.getRecommendedScriptSequence(primarySymptom);
       }
