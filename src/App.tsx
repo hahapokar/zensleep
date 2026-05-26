@@ -57,31 +57,6 @@ export default function ZenSleepApp() {
       document.body.classList.add('ios-fullscreen');
     }
 
-    // 应用初始化：异步预加载常用音频，不阻塞 UI
-    const initializeApp = async () => {
-      console.log('[App] 初始化应用，预加载常用音频...');
-      
-      const commonAudioFiles = [
-        'https://pub-301aea272da946d0a14d11fde1885996.r2.dev/sleep-buddha.mp3',
-        'https://pub-301aea272da946d0a14d11fde1885996.r2.dev/sleep-clear-mind.mp3',
-        'https://pub-301aea272da946d0a14d11fde1885996.r2.dev/nsdr-stress-reset.mp3',
-      ];
-
-      // 使用 Promise.allSettled 避免未处理的 Promise
-      await Promise.allSettled(
-        commonAudioFiles.map(url => audioEngine.preloadAudio(url))
-      );
-      console.log('[App] 预加载任务已结束（后台执行）');
-    };
-
-    // 使用 requestIdleCallback 在浏览器空闲时执行初始化
-    if ('requestIdleCallback' in window) {
-      requestIdleCallback(() => void initializeApp(), { timeout: 2000 });
-    } else {
-      // 备选方案：延迟 500ms 执行
-      setTimeout(() => void initializeApp(), 500);
-    }
-
     // 公开诊断工具到全局作用域（用于开发者工具调试）
     (window as any).zenSleepDiagnose = () => {
       console.log('[App] 运行诊断工具...');
