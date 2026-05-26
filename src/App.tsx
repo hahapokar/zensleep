@@ -37,12 +37,18 @@ export default function ZenSleepApp() {
   const [isPlaying, setIsPlaying] = useState(false);
   const [isAudioReady, setIsAudioReady] = useState(false);
   const [audioLoadingProgress, setAudioLoadingProgress] = useState(0);
+  const [audioError, setAudioError] = useState<string | null>(null);
   const screenTimerRef = useRef<NodeJS.Timeout | null>(null);
   const timerRef = useRef<NodeJS.Timeout | null>(null);
   const wakeLockRef = useRef<WakeLockSentinel | null>(null);
   const isIOSRef = useRef(false);
+  const initializedRef = useRef(false);
 
   useEffect(() => {
+    // Prevent double-run under React StrictMode
+    if (initializedRef.current) return;
+    initializedRef.current = true;
+
     isIOSRef.current = /iPad|iPhone|iPod/.test(navigator.userAgent) || 
                        (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
     
@@ -55,27 +61,25 @@ export default function ZenSleepApp() {
     const initializeApp = async () => {
       console.log('[App] 初始化应用，预加载常用音频...');
       
-      // 预加载前三个最常用的音频（后台执行，不等待）
       const commonAudioFiles = [
         'https://pub-301aea272da946d0a14d11fde1885996.r2.dev/sleep-buddha.mp3',
         'https://pub-301aea272da946d0a14d11fde1885996.r2.dev/sleep-clear-mind.mp3',
         'https://pub-301aea272da946d0a14d11fde1885996.r2.dev/nsdr-stress-reset.mp3',
       ];
 
-      // 异步预加载，不阻塞 UI 显示
-      commonAudioFiles.forEach(url => {
-        audioEngine.preloadAudio(url)
-          .then(() => console.log('[App] 预加载成功:', url))
-          .catch(err => console.warn('[App] 预加载失败:', url, err));
-      });
+      // 使用 Promise.allSettled 避免未处理的 Promise
+      await Promise.allSettled(
+        commonAudioFiles.map(url => audioEngine.preloadAudio(url))
+      );
+      console.log('[App] 预加载任务已结束（后台执行）');
     };
 
     // 使用 requestIdleCallback 在浏览器空闲时执行初始化
     if ('requestIdleCallback' in window) {
-      requestIdleCallback(() => initializeApp(), { timeout: 2000 });
+      requestIdleCallback(() => void initializeApp(), { timeout: 2000 });
     } else {
       // 备选方案：延迟 500ms 执行
-      setTimeout(initializeApp, 500);
+      setTimeout(() => void initializeApp(), 500);
     }
 
     // 公开诊断工具到全局作用域（用于开发者工具调试）
@@ -162,7 +166,6 @@ export default function ZenSleepApp() {
     timerRef.current = null;
     screenTimerRef.current = null;
 
-    audioEngine.stop();
     audioEngine.terminate();
 
     releaseWakeLock();
@@ -182,11 +185,16 @@ export default function ZenSleepApp() {
     timerRef.current = null;
     screenTimerRef.current = null;
 
-    audioEngine.stop();
     audioEngine.terminate();
 
     releaseWakeLock();
     exitFullscreen();
+
+    // 清理 iOS 专用样式（避免页面无法滚动恢复）
+    try {
+      document.body.style.removeProperty('--fullscreen-height');
+      document.body.classList.remove('force-fullscreen', 'ios-fullscreen');
+    } catch (e) {}
 
     setSessionProgress(100);
     setIsScreenOn(false);
@@ -215,7 +223,6 @@ export default function ZenSleepApp() {
       console.log('[App] 音频还在加载中，请稍候...');
       return;
     }
-
     setIsPlaybackStarted(true);
     setIsPlaying(true);
 
@@ -223,21 +230,34 @@ export default function ZenSleepApp() {
       await requestWakeLock();
       startScreenAutoOff();
 
-      if (timerRef.current) clearInterval(timerRef.current);
+      if (timerRef.current) {
+        clearInterval(timerRef.current);
+      }
+
       timerRef.current = setInterval(() => {
         const total = userConfig.contentConfig?.sessionDuration || 1;
         const currentTime = audioEngine.getCurrentTime();
-        const progress = Math.min((currentTime / total) * 100, 100);
+
+        const progress = Math.min(
+          (currentTime / total) * 100,
+          100
+        );
+
         setSessionProgress(progress);
-      }, 200);
+      }, 500);
 
       if (userConfig.contentConfig?.audioFile) {
         await audioEngine.playLoadedAudio();
+
+        // 只有正常播放结束才 finish
+        finishSession();
       }
     } catch (error) {
       console.error('[App] 播放错误:', error);
-    } finally {
-      finishSession();
+
+      setIsPlaying(false);
+      setIsPlaybackStarted(false);
+      setAudioError('音频播放失败，请检查网络或文件');
     }
   }, [finishSession, isAudioReady, isPlaybackStarted, requestWakeLock, startScreenAutoOff, userConfig.contentConfig]);
 
@@ -252,7 +272,7 @@ export default function ZenSleepApp() {
     } else {
       audioEngine.resume();
     }
-    setIsPlaying(!isPlaying);
+    setIsPlaying(prev => !prev);
   }, [isPlaybackStarted, isPlaying, startPlayback]);
 
   const handleModeSelect = (mode: 'nsdr' | 'sleep' | 'music' | 'whitenoise') => {
