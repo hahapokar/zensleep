@@ -50,6 +50,33 @@ export default function ZenSleepApp() {
       document.body.style.setProperty('--fullscreen-height', '100dvh');
       document.body.classList.add('ios-fullscreen');
     }
+
+    // 应用初始化：异步预加载常用音频，不阻塞 UI
+    const initializeApp = async () => {
+      console.log('[App] 初始化应用，预加载常用音频...');
+      
+      // 预加载前三个最常用的音频（后台执行，不等待）
+      const commonAudioFiles = [
+        'https://pub-301aea272da946d0a14d11fde1885996.r2.dev/sleep-buddha.mp3',
+        'https://pub-301aea272da946d0a14d11fde1885996.r2.dev/sleep-clear-mind.mp3',
+        'https://pub-301aea272da946d0a14d11fde1885996.r2.dev/nsdr-stress-reset.mp3',
+      ];
+
+      // 异步预加载，不阻塞 UI 显示
+      commonAudioFiles.forEach(url => {
+        audioEngine.preloadAudio(url)
+          .then(() => console.log('[App] 预加载成功:', url))
+          .catch(err => console.warn('[App] 预加载失败:', url, err));
+      });
+    };
+
+    // 使用 requestIdleCallback 在浏览器空闲时执行初始化
+    if ('requestIdleCallback' in window) {
+      requestIdleCallback(() => initializeApp(), { timeout: 2000 });
+    } else {
+      // 备选方案：延迟 500ms 执行
+      setTimeout(initializeApp, 500);
+    }
   }, []);
 
   const enterFullscreen = async () => {

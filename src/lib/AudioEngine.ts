@@ -80,15 +80,18 @@ export class AudioEngine {
     return url;
   }
 
-  private async fetchAndCacheAudio(url: string): Promise<Blob> {
+  private async fetchAndCacheAudio(url: string, retryCount: number = 0): Promise<Blob> {
     const cacheKey = this.getCacheKey(url);
     const cacheName = 'zensleep-audio-v2';
+    const MAX_RETRIES = 2;
     
+    // 第一步：检查内存缓存
     if (this.blobCache.has(cacheKey)) {
       console.log('[AudioEngine] ⚡⚡ 内存缓存命中，瞬间返回!');
       return this.blobCache.get(cacheKey)!;
     }
     
+    // 第二步：检查浏览器缓存
     if ('caches' in window) {
       try {
         const cache = await caches.open(cacheName);
@@ -105,42 +108,58 @@ export class AudioEngine {
       }
     }
     
-    console.log('[AudioEngine] 📥 正在从网络下载音频:', url);
+    // 第三步：从网络下载
+    console.log(`[AudioEngine] 📥 正在从网络下载音频 (尝试 ${retryCount + 1}/${MAX_RETRIES + 1}):`, url);
     const startTime = performance.now();
     
-    const response = await fetch(url, { 
-      cache: 'force-cache',
-      mode: 'cors',
-      credentials: 'same-origin'
-    });
-    
-    if (!response.ok) {
-      throw new Error(`音频下载失败: ${response.status}`);
-    }
-    
-    const blob = await response.blob();
-    const downloadTime = (performance.now() - startTime) / 1000;
-    console.log(`[AudioEngine] ✅ 下载完成 (${downloadTime.toFixed(2)}s, ${(blob.size / 1024 / 1024).toFixed(2)}MB)`);
-    
-    this.blobCache.set(cacheKey, blob);
-    
-    if ('caches' in window) {
-      try {
-        const cache = await caches.open(cacheName);
-        const cacheResponse = new Response(blob, {
-          headers: {
-            'Content-Type': 'audio/mpeg',
-            'Cache-Control': 'public, max-age=31536000'
-          }
-        });
-        await cache.put(cacheKey, cacheResponse);
-        console.log('[AudioEngine] 💾 已存入浏览器缓存');
-      } catch (e) {
-        console.warn('[AudioEngine] 浏览器缓存存储失败', e);
+    try {
+      const response = await fetch(url, { 
+        cache: 'force-cache',
+        mode: 'cors',
+        credentials: 'same-origin'
+      });
+      
+      if (!response.ok) {
+        if (response.status === 404 && retryCount < MAX_RETRIES) {
+          console.warn(`[AudioEngine] ⚠️  文件未找到 (${response.status})，${retryCount + 1}秒后重试...`);
+          await new Promise(resolve => setTimeout(resolve, 1000 * (retryCount + 1)));
+          return this.fetchAndCacheAudio(url, retryCount + 1);
+        }
+        throw new Error(`音频下载失败: ${response.status}`);
       }
+      
+      const blob = await response.blob();
+      const downloadTime = (performance.now() - startTime) / 1000;
+      console.log(`[AudioEngine] ✅ 下载完成 (${downloadTime.toFixed(2)}s, ${(blob.size / 1024 / 1024).toFixed(2)}MB)`);
+      
+      this.blobCache.set(cacheKey, blob);
+      
+      // 第四步：存入浏览器缓存
+      if ('caches' in window) {
+        try {
+          const cache = await caches.open(cacheName);
+          const cacheResponse = new Response(blob, {
+            headers: {
+              'Content-Type': 'audio/mpeg',
+              'Cache-Control': 'public, max-age=31536000'
+            }
+          });
+          await cache.put(cacheKey, cacheResponse);
+          console.log('[AudioEngine] 💾 已存入浏览器缓存');
+        } catch (e) {
+          console.warn('[AudioEngine] 浏览器缓存存储失败', e);
+        }
+      }
+      
+      return blob;
+    } catch (error) {
+      if (retryCount < MAX_RETRIES) {
+        console.warn(`[AudioEngine] ⚠️  网络错误，${retryCount + 1}秒后重试...`, error);
+        await new Promise(resolve => setTimeout(resolve, 1000 * (retryCount + 1)));
+        return this.fetchAndCacheAudio(url, retryCount + 1);
+      }
+      throw error;
     }
-    
-    return blob;
   }
 
   public preloadAudio(audioPath: string): Promise<void> {
