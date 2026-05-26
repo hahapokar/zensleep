@@ -77,6 +77,14 @@ export default function ZenSleepApp() {
       // 备选方案：延迟 500ms 执行
       setTimeout(initializeApp, 500);
     }
+
+    // 公开诊断工具到全局作用域（用于开发者工具调试）
+    (window as any).zenSleepDiagnose = () => {
+      console.log('[App] 运行诊断工具...');
+      return audioEngine.diagnoseR2Connection();
+    };
+    
+    console.log('[App] 💡 提示: 在开发者工具中运行 zenSleepDiagnose() 诊断 R2 连接问题');
   }, []);
 
   const enterFullscreen = async () => {

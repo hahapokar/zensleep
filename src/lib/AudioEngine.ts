@@ -113,19 +113,57 @@ export class AudioEngine {
     const startTime = performance.now();
     
     try {
-      const response = await fetch(url, { 
-        cache: 'force-cache',
-        mode: 'cors',
-        credentials: 'same-origin'
-      });
-      
+      // 多种 fetch 配置尝试，逐步回退
+      let response: Response | null = null;
+      let lastError: Error | null = null;
+
+      // 尝试 1: 标准 CORS 请求
+      try {
+        response = await fetch(url, { 
+          cache: 'force-cache',
+          mode: 'cors',
+        });
+      } catch (e) {
+        lastError = e as Error;
+        console.warn('[AudioEngine] 配置 1 失败，尝试配置 2:', lastError.message);
+      }
+
+      // 尝试 2: 移除 mode，让浏览器自动处理
+      if (!response) {
+        try {
+          response = await fetch(url, { 
+            cache: 'force-cache',
+          });
+        } catch (e) {
+          lastError = e as Error;
+          console.warn('[AudioEngine] 配置 2 失败，尝试配置 3:', lastError.message);
+        }
+      }
+
+      // 尝试 3: 禁用缓存策略
+      if (!response) {
+        try {
+          response = await fetch(url, {
+            mode: 'cors',
+            credentials: 'omit',
+          });
+        } catch (e) {
+          lastError = e as Error;
+          console.warn('[AudioEngine] 配置 3 失败:', lastError.message);
+        }
+      }
+
+      if (!response) {
+        throw lastError || new Error('所有 fetch 配置都失败了');
+      }
+
       if (!response.ok) {
         if (response.status === 404 && retryCount < MAX_RETRIES) {
           console.warn(`[AudioEngine] ⚠️  文件未找到 (${response.status})，${retryCount + 1}秒后重试...`);
           await new Promise(resolve => setTimeout(resolve, 1000 * (retryCount + 1)));
           return this.fetchAndCacheAudio(url, retryCount + 1);
         }
-        throw new Error(`音频下载失败: ${response.status}`);
+        throw new Error(`音频下载失败: ${response.status} ${response.statusText}`);
       }
       
       const blob = await response.blob();
@@ -310,6 +348,45 @@ export class AudioEngine {
       memoryCacheSize: this.blobCache.size,
       memoryCacheKeys: Array.from(this.blobCache.keys())
     };
+  }
+
+  /**
+   * 诊断 R2 连接问题
+   */
+  public async diagnoseR2Connection(testUrl: string = 'https://pub-301aea272da946d0a14d11fde1885996.r2.dev/sleep-buddha.mp3'): Promise<void> {
+    console.log('[AudioEngine] 🔍 开始诊断 R2 连接...');
+    console.log('[AudioEngine] 测试 URL:', testUrl);
+
+    const tests = [
+      { name: '标准 CORS', config: { mode: 'cors' as const } },
+      { name: '无 mode', config: {} },
+      { name: 'CORS + omit', config: { mode: 'cors' as const, credentials: 'omit' as const } },
+      { name: 'no-cors', config: { mode: 'no-cors' as const } },
+    ];
+
+    for (const test of tests) {
+      try {
+        console.log(`[AudioEngine] 📡 尝试: ${test.name}`);
+        const startTime = performance.now();
+        
+        const response = await fetch(testUrl, {
+          cache: 'force-cache',
+          ...test.config,
+        } as RequestInit);
+        
+        const duration = (performance.now() - startTime).toFixed(0);
+        console.log(`[AudioEngine] ✅ ${test.name} 成功 (${duration}ms)`);
+        console.log(`[AudioEngine] 状态码: ${response.status}, 内容类型: ${response.headers.get('content-type')}`);
+        console.log(`[AudioEngine] 文件大小: ${(response.headers.get('content-length') || '未知')} bytes`);
+        console.log(`[AudioEngine] CORS 头: ${response.headers.get('access-control-allow-origin') || '无'}`);
+        
+        return;
+      } catch (e) {
+        console.warn(`[AudioEngine] ❌ ${test.name} 失败:`, (e as Error).message);
+      }
+    }
+
+    console.error('[AudioEngine] 🚨 所有诊断配置都失败了，请检查网络或 R2 配置');
   }
 }
 
