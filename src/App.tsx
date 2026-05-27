@@ -498,10 +498,7 @@ export default function ZenSleepApp() {
         {appStage === 'ZENSLEEP' && (
           <ZenSleepSession
             onExit={handleExitSession}
-            onBackToPrep={() => {
-              resetSession();
-              setAppStage('SESSION_PREP');
-            }}
+            onBackToPrep={handleExitSession}
             totalDuration={userConfig.contentConfig?.sessionDuration || 0}
             currentProgress={sessionProgress}
             isScreenOn={isScreenOn}
