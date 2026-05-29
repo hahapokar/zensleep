@@ -107,6 +107,7 @@ export class ContentManager {
             'relax-body': ['sleep-relax-body'],
             'calm-heart': ['sleep-calm-heart'],
             'buddha': ['sleep-buddha'],
+            'jingang': ['sleep-jingang'],
           };
           return sleepSequences[sleepOption] || ScriptManager.getRecommendedScriptSequence('sleep');
         } else if (primarySymptom === 'music' && musicOption) {

@@ -72,8 +72,15 @@ const SLEEP_SCRIPTS: Record<string, SymptomScript> = {
   },
   'sleep-buddha': {
     key: 'sleep-buddha',
-    title: '禅定 · 佛陀助眠',
-    content: ['宁静的禅意，帮助你安然入睡'],
+    title: '禪诵 · 心经和大悲咒',
+    content: ['禪诵心经和大悲咒，帮助你安然入睡'],
+    duration: 1800, // 30分钟
+    emotion: 'calm',
+  },
+  'sleep-jingang': {
+    key: 'sleep-jingang',
+    title: '禪诵 · 金刚经',
+    content: ['禪诵金刚经，带来平静与智慧'],
     duration: 1800, // 30分钟
     emotion: 'calm',
   },
