@@ -81,7 +81,7 @@ const SLEEP_SCRIPTS: Record<string, SymptomScript> = {
     key: 'sleep-jingang',
     title: '禪诵 · 金刚经',
     content: ['禪诵金刚经，带来平静与智慧'],
-    duration: 1800, // 30分钟
+    duration: 3600, // 60分钟
     emotion: 'calm',
   },
 };
