@@ -36,7 +36,7 @@ const SLEEP_OPTIONS: SleepOption[] = [
   },
   {
     id: 'jingang',
-    name: '禪诵 · 金刚经 (30分钟)',
+    name: '禪诵 · 金刚经 (60分钟)',
     description: '禪诵金刚经，带来平静与智慧。适合喜欢禪修、需要内心宁静的用户',
     target: '喜欢禪修、需要内心宁静的用户',
   },
