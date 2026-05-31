@@ -53,7 +53,7 @@ export default function InitialChoice({ onModeSelect }: InitialChoiceProps) {
             }`}
           >
             <div className="text-left space-y-1">
-              <h3 className="text-slate-100 font-semibold text-sm">NSDR 非睡眠放松</h3>
+              <h3 className="text-slate-100 font-semibold text-sm">NSDR 引导深度放松</h3>
               <p className="text-slate-400 text-xs">
                 白天进行非睡眠深度放松练习
               </p>
@@ -81,7 +81,7 @@ export default function InitialChoice({ onModeSelect }: InitialChoiceProps) {
             <div className="text-left space-y-1">
               <div className="flex items-center gap-2 mb-0.5">
                 <Moon size={14} className="text-emerald-400" />
-                <h3 className="text-slate-100 font-semibold text-sm">进入睡眠</h3>
+                <h3 className="text-slate-100 font-semibold text-sm">导语助眠</h3>
               </div>
               <p className="text-slate-400 text-xs">
                 夜晚进入深度睡眠模式，通过引导语帮助入睡
@@ -139,10 +139,10 @@ export default function InitialChoice({ onModeSelect }: InitialChoiceProps) {
             <div className="text-left space-y-1">
               <div className="flex items-center gap-2 mb-0.5">
                 <Waves size={14} className="text-emerald-400" />
-                <h3 className="text-slate-100 font-semibold text-sm">白噪音</h3>
+                <h3 className="text-slate-100 font-semibold text-sm">粉红噪音</h3>
               </div>
               <p className="text-slate-400 text-xs">
-                自然白噪音，包括营火、雷声、海浪、水滴等
+                自然粉红噪音，包括溪流、雷声、海浪、水滴、风声等
               </p>
               <div className="flex items-center gap-2 text-emerald-400 text-xs mt-1">
                 <span>选择声音</span>

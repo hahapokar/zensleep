@@ -74,6 +74,15 @@ export default function ZenSleepSession({
     onSeek(newProgress);
   };
 
+  // 阻止进度条拖动时触发屏幕点击
+  const handleSeekMouseDown = (e: React.MouseEvent) => {
+    e.stopPropagation();
+  };
+
+  const handleSeekTouchStart = (e: React.TouchEvent) => {
+    e.stopPropagation();
+  };
+
   // ==============================================
   // ✅ 音频结束：完全黑屏、无任何文字、无任何UI
   // ==============================================
@@ -167,6 +176,8 @@ export default function ZenSleepSession({
                     step={0.1}
                     value={currentProgress}
                     onChange={handleSeekChange}
+                    onMouseDown={handleSeekMouseDown}
+                    onTouchStart={handleSeekTouchStart}
                     className="w-full h-1 bg-slate-800 rounded-full appearance-none cursor-pointer accent-emerald-500"
                   />
                 </div>
@@ -186,6 +197,8 @@ export default function ZenSleepSession({
                     step="0.01"
                     value={volume}
                     onChange={handleVolumeChange}
+                    onMouseDown={handleSeekMouseDown}
+                    onTouchStart={handleSeekTouchStart}
                     className="flex-1 h-1 bg-slate-800 rounded-full appearance-none cursor-pointer accent-emerald-500"
                     style={{
                       background: `linear-gradient(to right, rgb(16, 185, 129) 0%, rgb(16, 185, 129) ${volume * 100}%, rgb(30, 41, 59) ${volume * 100}%, rgb(30, 41, 59) 100%)`
