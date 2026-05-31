@@ -1,20 +1,18 @@
 /**
- * ZenSleep AudioEngine - 稳定生产版
+ * ZenSleep AudioEngine - 缓存优化版
  *
- * 修复内容：
- * 1. 移除 force-cache（导致旧 404 缓存问题）
- * 2. 修复 retry 逻辑（404 不再重试）
- * 3. 修复 AudioElement 内存泄漏
- * 4. 修复 Blob URL 生命周期问题
- * 5. 增加缓存 TTL 与最大缓存数量
- * 6. 改进错误日志
- * 7. 防止重复 preload
- * 8. 防止 objectURL 泄漏
+ * 优化内容：
+ * 1. 增加内存缓存数量和TTL
+ * 2. 延长浏览器缓存时间
+ * 3. 使用LRU策略优化内存缓存
+ * 4. 增加immutable缓存头
+ * 5. 优化缓存访问策略
  */
 
 interface CacheItem {
   blob: Blob;
   timestamp: number;
+  lastAccessed: number;
 }
 
 export class AudioEngine {
@@ -42,15 +40,15 @@ export class AudioEngine {
   private preparingPromise: Map<string, Promise<void>> = new Map();
 
   // =========================
-  // 配置
+  // 配置 - 缓存优化版
   // =========================
-  private readonly CACHE_NAME = 'zensleep-audio-v3';
+  private readonly CACHE_NAME = 'zensleep-audio-v4';
 
-  // 最大内存缓存数量
-  private readonly MAX_MEMORY_CACHE = 8;
+  // 最大内存缓存数量 - 增加到20个
+  private readonly MAX_MEMORY_CACHE = 20;
 
-  // 缓存 TTL（1小时）
-  private readonly CACHE_TTL = 1000 * 60 * 60;
+  // 缓存 TTL（7天）- 大幅延长
+  private readonly CACHE_TTL = 1000 * 60 * 60 * 24 * 7;
 
   // 最大重试次数
   private readonly MAX_RETRIES = 2;
@@ -165,18 +163,22 @@ export class AudioEngine {
   private cleanExpiredMemoryCache() {
     const now = Date.now();
 
+    // 删除过期的
     for (const [key, item] of this.blobCache.entries()) {
       if (now - item.timestamp > this.CACHE_TTL) {
         this.blobCache.delete(key);
       }
     }
 
-    // LRU：超出数量删除最旧
+    // LRU：超出数量删除最久未使用的
     if (this.blobCache.size > this.MAX_MEMORY_CACHE) {
-      const oldestKey = this.blobCache.keys().next().value;
+      const sortedEntries = Array.from(this.blobCache.entries())
+        .sort((a, b) => a[1].lastAccessed - b[1].lastAccessed);
 
-      if (oldestKey) {
-        this.blobCache.delete(oldestKey);
+      // 删除最旧的
+      const entriesToDelete = sortedEntries.slice(0, sortedEntries.length - this.MAX_MEMORY_CACHE);
+      for (const [key] of entriesToDelete) {
+        this.blobCache.delete(key);
       }
     }
   }
@@ -190,18 +192,23 @@ export class AudioEngine {
     this.cleanExpiredMemoryCache();
 
     // =========================
-    // 1. 内存缓存
+    // 1. 内存缓存（优先）
     // =========================
 
     const memoryItem = this.blobCache.get(cacheKey);
 
     if (memoryItem) {
       console.log('[AudioEngine] ⚡ 内存缓存命中');
+      // 更新最后访问时间
+      this.blobCache.set(cacheKey, {
+        ...memoryItem,
+        lastAccessed: Date.now()
+      });
       return memoryItem.blob;
     }
 
     // =========================
-    // 2. Cache API
+    // 2. Cache API（浏览器持久缓存）
     // =========================
 
     if ('caches' in window) {
@@ -218,6 +225,7 @@ export class AudioEngine {
           this.blobCache.set(cacheKey, {
             blob,
             timestamp: Date.now(),
+            lastAccessed: Date.now()
           });
 
           return blob;
@@ -304,10 +312,11 @@ export class AudioEngine {
       this.blobCache.set(cacheKey, {
         blob,
         timestamp: Date.now(),
+        lastAccessed: Date.now()
       });
 
       // =========================
-      // 写入 Cache API
+      // 写入 Cache API（持久缓存）
       // =========================
 
       if ('caches' in window) {
@@ -317,13 +326,13 @@ export class AudioEngine {
           const cacheResponse = new Response(blob, {
             headers: {
               'Content-Type': 'audio/mpeg',
-              'Cache-Control': 'public, max-age=31536000',
+              'Cache-Control': 'public, max-age=31536000, immutable',
             },
           });
 
           await cache.put(cacheKey, cacheResponse);
 
-          console.log('[AudioEngine] 💾 已写入浏览器缓存');
+          console.log('[AudioEngine] 💾 已写入浏览器长期缓存');
         } catch (e) {
           console.warn('[AudioEngine] Cache API写入失败:', e);
         }
