@@ -35,24 +35,19 @@ export class ContentManager {
     if (symptoms.includes('nsdr')) {
       sessionDuration = nsdrDuration || 1800;
     } else if (symptoms.includes('sleep') && sleepOption) {
-      // 如果有传入时长就使用传入的，否则使用脚本时长
       const script = SCRIPTS[`sleep-${sleepOption}`];
       sessionDuration = nsdrDuration || script?.duration || 1200;
     } else if (symptoms.includes('music') && musicOption) {
-      // 如果有传入时长就使用传入的，否则使用脚本时长
       const script = SCRIPTS[`music-${musicOption}`];
       sessionDuration = nsdrDuration || script?.duration || 1200;
     } else if (symptoms.includes('whitenoise') && whitenoiseOption) {
-      // 如果有传入时长就使用传入的，否则使用脚本时长
       const script = SCRIPTS[`whitenoise-${whitenoiseOption}`];
       sessionDuration = nsdrDuration || script?.duration || 1800;
     }
 
     const scriptSequence = this.buildScriptSequence(constitution, symptoms, nsdrDuration, sleepOption, musicOption, whitenoiseOption);
     
-    // ==============================================
     // 关键：你不需要额外音乐，直接清空 musicTracks
-    // ==============================================
     const musicTracks: string[] = [];
 
     let audioFile: string | undefined;
@@ -115,9 +110,11 @@ export class ContentManager {
           return sleepSequences[sleepOption] || ScriptManager.getRecommendedScriptSequence('sleep');
         } else if (primarySymptom === 'music' && musicOption) {
           const musicSequences: Record<string, string[]> = {
-            'light': ['music-light'],
             'balanced': ['music-balanced'],
-            'deep': ['music-deep'],
+            'singingbowl': ['music-singingbowl'],
+            'chinese': ['music-chinese'],
+            'western': ['music-western'],
+            'lullaby': ['music-lullaby'],
           };
           return musicSequences[musicOption] || ScriptManager.getRecommendedScriptSequence('music');
         } else if (primarySymptom === 'whitenoise' && whitenoiseOption) {
@@ -127,7 +124,6 @@ export class ContentManager {
             'wave': ['whitenoise-wave'],
             'waterdrop': ['whitenoise-waterdrop'],
             'streamrain': ['whitenoise-streamrain'],
-            'singing bowl': ['whitenoise-singing bowl'],
             'wind': ['whitenoise-wind'],
           };
           return whitenoiseSequences[whitenoiseOption] || ScriptManager.getRecommendedScriptSequence('whitenoise');
@@ -138,9 +134,6 @@ export class ContentManager {
     return ScriptManager.getRecommendedScriptSequence('general');
   }
 
-  // ==============================
-  // 你不用的功能，我直接清理干净
-  // ==============================
   private static buildMusicList(): string[] {
     return [];
   }

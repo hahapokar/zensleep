@@ -1,28 +1,44 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { Check, ChevronLeft, Music } from 'lucide-react';
+import { Check, ChevronLeft, Music, Bell, Music2, Disc } from 'lucide-react';
 
 interface MusicOption {
   id: string;
   name: string;
   description: string;
+  icon: React.ReactNode;
 }
 
 const MUSIC_OPTIONS: MusicOption[] = [
   {
-    id: 'light',
-    name: '轻盈 · 柔和伴眠',
-    description: '轻柔的背景音乐，适合快速入眠',
-  },
-  {
     id: 'balanced',
-    name: '平和 · 舒适陪伴',
+    name: '脑波音乐 · 深度放松',
     description: '平衡的背景音乐，适合深度放松',
+    icon: <Music2 size={20} />,
   },
   {
-    id: 'deep',
-    name: '深度 · 完整睡眠',
-    description: '深沉的背景音乐，助力整晚安眠',
+    id: 'singingbowl',
+    name: '颂钵 · 心灵振动',
+    description: '颂钵的声音，帮助放松身心',
+    icon: <Bell size={20} />,
+  },
+  {
+    id: 'chinese',
+    name: '古风禅乐 · 静心养神',
+    description: '古风禅意音乐，带来内心的平静',
+    icon: <Music size={20} />,
+  },
+  {
+    id: 'western',
+    name: '古典音乐 · 优雅入眠',
+    description: '经典古典音乐，优雅而宁静',
+    icon: <Disc size={20} />,
+  },
+  {
+    id: 'lullaby',
+    name: '无歌词摇篮曲 · 温柔哄睡',
+    description: '轻柔的摇篮曲，温柔哄睡',
+    icon: <Music2 size={20} />,
   },
 ];
 
@@ -108,15 +124,20 @@ export default function MusicOptionSelector({
                     )}
                   </div>
                   <div className="flex-1 min-w-0">
-                    <h3
-                      className={`font-medium text-lg leading-tight ${
-                        selectedMusic === option.id
-                          ? 'text-emerald-100'
-                          : 'text-slate-200'
-                      }`}
-                    >
-                      {option.name}
-                    </h3>
+                    <div className="flex items-center gap-2 mb-0.5">
+                      <span className={selectedMusic === option.id ? 'text-emerald-400' : 'text-slate-500'}>
+                        {option.icon}
+                      </span>
+                      <h3
+                        className={`font-medium text-lg leading-tight ${
+                          selectedMusic === option.id
+                            ? 'text-emerald-100'
+                            : 'text-slate-200'
+                        }`}
+                      >
+                        {option.name}
+                      </h3>
+                    </div>
                     <p className="text-slate-400 text-xs mt-1 leading-relaxed">
                       {option.description}
                     </p>

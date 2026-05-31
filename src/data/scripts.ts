@@ -88,25 +88,39 @@ const SLEEP_SCRIPTS: Record<string, SymptomScript> = {
 
 // 背景音乐助眠脚本定义
 const MUSIC_SCRIPTS: Record<string, SymptomScript> = {
-  'music-light': {
-    key: 'music-light',
-    title: '轻盈 · 柔和伴眠',
-    content: ['轻柔的背景音乐，适合快速入眠'],
+  'music-balanced': {
+    key: 'music-balanced',
+    title: '脑波音乐 · 深度放松',
+    content: ['平衡的背景音乐，适合深度放松'],
+    duration: 1200, // 20分钟
+    emotion: 'soothing',
+  },
+  'music-singingbowl': {
+    key: 'music-singingbowl',
+    title: '颂钵 · 心灵振动',
+    content: ['颂钵的声音，帮助放松身心'],
     duration: 1200, // 20分钟
     emotion: 'calm',
   },
-  'music-balanced': {
-    key: 'music-balanced',
-    title: '平和 · 舒适陪伴',
-    content: ['平衡的背景音乐，适合深度放松'],
-    duration: 2400, // 40分钟
+  'music-chinese': {
+    key: 'music-chinese',
+    title: '古风禅乐 · 静心养神',
+    content: ['古风禅意音乐，带来内心的平静'],
+    duration: 1200, // 20分钟
+    emotion: 'calm',
+  },
+  'music-western': {
+    key: 'music-western',
+    title: '古典音乐 · 优雅入眠',
+    content: ['经典古典音乐，优雅而宁静'],
+    duration: 1200, // 20分钟
     emotion: 'soothing',
   },
-  'music-deep': {
-    key: 'music-deep',
-    title: '深度 · 完整睡眠',
-    content: ['深沉的背景音乐，助力整晚安眠'],
-    duration: 3600, // 60分钟
+  'music-lullaby': {
+    key: 'music-lullaby',
+    title: '无歌词摇篮曲 · 温柔哄睡',
+    content: ['轻柔的摇篮曲，温柔哄睡'],
+    duration: 1200, // 20分钟
     emotion: 'warm',
   },
 };
@@ -148,13 +162,6 @@ const WHITENOISE_SCRIPTS: Record<string, SymptomScript> = {
     duration: 1800, // 30分钟
     emotion: 'soothing',
   },
-  'whitenoise-singing bowl': {
-      key: 'whitenoise-singing bowl',
-      title: '颂钵 · 心灵振动',
-      content: ['颂钵的声音，帮助放松身心'],
-      duration: 1800, // 30分钟
-      emotion: 'calm',
-    },
   'whitenoise-wind': {
     key: 'whitenoise-wind',
     title: '风声 · 自然吹拂',

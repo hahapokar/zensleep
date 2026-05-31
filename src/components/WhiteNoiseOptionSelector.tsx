@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { Check, ChevronLeft, Zap, Wind, Waves, Droplets, CloudRain, Bell, Wind as WindIcon } from 'lucide-react';
+import { Check, ChevronLeft, Zap, Wind, Waves, Droplets, CloudRain, Wind as WindIcon } from 'lucide-react';
 
 interface WhiteNoiseOption {
   id: string;
@@ -41,12 +41,6 @@ const WHITENOISE_OPTIONS: WhiteNoiseOption[] = [
     icon: <CloudRain size={20} />,
   },
   {
-    id: 'singing bowl',
-    name: '颂钵 · 心灵振动',
-    description: '颂钵的声音，帮助放松身心，带来平静的感觉',
-    icon: <Bell size={20} />,
-  },
-  {
     id: 'wind',
     name: '风声 · 自然吹拂',
     description: '轻轻的风声，带来平静的感觉，帮助入睡',
@@ -69,7 +63,6 @@ export default function WhiteNoiseOptionSelector({
   const handleOptionSelect = (optionId: string) => {
     setSelectedOption(optionId);
     setIsConfirming(true);
-    // 减少延迟从 600ms 改为 300ms，更快响应
     setTimeout(() => {
       onOptionSelect(optionId);
     }, 300);
@@ -83,7 +76,6 @@ export default function WhiteNoiseOptionSelector({
         transition={{ duration: 0.6 }}
         className="w-full max-w-3xl mx-auto p-4 py-6"
       >
-        {/* 返回按钮 */}
         {onBack && (
           <motion.button
             initial={{ opacity: 0 }}
@@ -102,7 +94,6 @@ export default function WhiteNoiseOptionSelector({
           transition={{ duration: 0.6 }}
           className="space-y-6"
         >
-          {/* 标题 */}
           <div>
             <h1 className="text-2xl font-light text-slate-100 mb-1">
               选择白噪音模式
@@ -112,7 +103,6 @@ export default function WhiteNoiseOptionSelector({
             </p>
           </div>
 
-          {/* 选项网格 */}
           <div className="space-y-2">
             {WHITENOISE_OPTIONS.map((option, index) => (
               <motion.button
@@ -165,7 +155,6 @@ export default function WhiteNoiseOptionSelector({
             ))}
           </div>
 
-          {/* 提示 */}
           <div className="p-3 rounded-lg bg-slate-800/50 border-l-2 border-emerald-400">
             <p className="text-slate-300 text-xs">
               💡 提示：白噪音可以帮助屏蔽环境噪音，创造一个宁静的睡眠环境。选择您喜欢的声音开始吧！
@@ -173,7 +162,6 @@ export default function WhiteNoiseOptionSelector({
           </div>
         </motion.div>
 
-        {/* 加载动画 */}
         <AnimatePresence>
           {isConfirming && (
             <motion.div
