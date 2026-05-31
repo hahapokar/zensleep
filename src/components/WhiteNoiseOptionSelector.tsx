@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { Check, ChevronLeft, Flame, Zap, Wind, Waves, Droplets } from 'lucide-react';
+import { Check, ChevronLeft, Zap, Wind, Waves, Droplets, CloudRain, Bell, Wind as WindIcon } from 'lucide-react';
 
 interface WhiteNoiseOption {
   id: string;
@@ -11,34 +11,46 @@ interface WhiteNoiseOption {
 
 const WHITENOISE_OPTIONS: WhiteNoiseOption[] = [
   {
-    id: 'campfire',
-    name: '营火 · 温暖相伴 (30分钟)',
-    description: '噼里啪啦的营火声，温暖而宁静，营造户外露营的氛围',
-    icon: <Flame size={20} />,
-  },
-  {
     id: 'thunder',
-    name: '雷声 · 自然怒吼 (30分钟)',
+    name: '雷声 · 自然怒吼',
     description: '远处的雷声，伴着雨声，带来宁静和安全感',
     icon: <Zap size={20} />,
   },
   {
     id: 'nature',
-    name: '自然 · 鸟语花香 (30分钟)',
+    name: '自然 · 鸟语花香',
     description: '大自然的声音，包括鸟叫、流水，放松身心',
     icon: <Wind size={20} />,
   },
   {
     id: 'wave',
-    name: '海浪 · 潮起潮落 (30分钟)',
+    name: '海浪 · 潮起潮落',
     description: '海浪的声音，带来大海的气息，帮助平静入睡',
     icon: <Waves size={20} />,
   },
   {
     id: 'waterdrop',
-    name: '水滴 · 滴水穿石 (30分钟)',
+    name: '水滴 · 滴水穿石',
     description: '清澈的水滴声，静心宁神，适合冥想和睡眠',
     icon: <Droplets size={20} />,
+  },
+  {
+    id: 'streamrain',
+    name: '溪流 · 潺潺流水',
+    description: '潺潺的溪流声，带来宁静的感觉，帮助放松身心',
+    icon: <CloudRain size={20} />,
+  },
+  {
+    id: 'singing bowl',
+    name: '颂钵 · 心灵振动',
+    description: '颂钵的声音，帮助放松身心，带来平静的感觉',
+    icon: <Bell size={20} />,
+  },
+  {
+    id: 'wind',
+    name: '风声 · 自然吹拂',
+    description: '轻轻的风声，带来平静的感觉，帮助入睡',
+    icon: <WindIcon size={20} />,
   },
 ];
 

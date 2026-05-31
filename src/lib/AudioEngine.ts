@@ -23,6 +23,9 @@ export class AudioEngine {
   private baseVolume = 0.12;
   private isPaused = false;
   private pausedVolume = 0;
+  private shouldLoop = false;
+  private stopTimer: NodeJS.Timeout | null = null;
+  private onStoppedCallback: (() => void) | null = null;
 
   private audioAssetPath: string | null = null;
   private audioBlobUrl: string | null = null;
@@ -103,15 +106,19 @@ export class AudioEngine {
   }
 
   public stop() {
+    this.clearAutoStop();
     this.cleanupAudioElement();
   }
 
   public terminate() {
     try {
+      this.clearAutoStop();
       this.cleanupAudioElement();
 
       this.audioAssetPath = null;
       this.isPaused = false;
+      this.shouldLoop = false;
+      this.onStoppedCallback = null;
 
       this.blobCache.clear();
       this.preparingPromise.clear();
@@ -471,10 +478,42 @@ export class AudioEngine {
   // 播放
   // =========================
 
+  // 设置是否循环播放
+  public setLoop(shouldLoop: boolean) {
+    this.shouldLoop = shouldLoop;
+    if (this.audioElement) {
+      this.audioElement.loop = shouldLoop;
+    }
+  }
+
+  // 设置定时停止（毫秒）
+  public setAutoStop(durationMs: number, onStopped?: () => void) {
+    this.clearAutoStop();
+    this.onStoppedCallback = onStopped || null;
+    
+    this.stopTimer = setTimeout(() => {
+      this.stop();
+      if (this.onStoppedCallback) {
+        this.onStoppedCallback();
+      }
+    }, durationMs);
+  }
+
+  // 清除定时停止
+  public clearAutoStop() {
+    if (this.stopTimer) {
+      clearTimeout(this.stopTimer);
+      this.stopTimer = null;
+    }
+  }
+
   public async playLoadedAudio(): Promise<void> {
     if (!this.audioElement) {
       throw new Error('没有已准备的音频');
     }
+
+    // 设置循环
+    this.audioElement.loop = this.shouldLoop;
 
     return new Promise((resolve, reject) => {
       if (!this.audioElement) {
@@ -500,8 +539,11 @@ export class AudioEngine {
       };
 
       const handleEnded = () => {
-        cleanup();
-        resolve();
+        // 如果是循环模式，不resolve，继续循环
+        if (!this.shouldLoop) {
+          cleanup();
+          resolve();
+        }
       };
 
       const handleError = () => {

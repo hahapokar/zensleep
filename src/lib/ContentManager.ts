@@ -35,14 +35,17 @@ export class ContentManager {
     if (symptoms.includes('nsdr')) {
       sessionDuration = nsdrDuration || 1800;
     } else if (symptoms.includes('sleep') && sleepOption) {
+      // 如果有传入时长就使用传入的，否则使用脚本时长
       const script = SCRIPTS[`sleep-${sleepOption}`];
-      sessionDuration = script?.duration || 1200;
+      sessionDuration = nsdrDuration || script?.duration || 1200;
     } else if (symptoms.includes('music') && musicOption) {
+      // 如果有传入时长就使用传入的，否则使用脚本时长
       const script = SCRIPTS[`music-${musicOption}`];
-      sessionDuration = script?.duration || 1200;
+      sessionDuration = nsdrDuration || script?.duration || 1200;
     } else if (symptoms.includes('whitenoise') && whitenoiseOption) {
+      // 如果有传入时长就使用传入的，否则使用脚本时长
       const script = SCRIPTS[`whitenoise-${whitenoiseOption}`];
-      sessionDuration = script?.duration || 1800;
+      sessionDuration = nsdrDuration || script?.duration || 1800;
     }
 
     const scriptSequence = this.buildScriptSequence(constitution, symptoms, nsdrDuration, sleepOption, musicOption, whitenoiseOption);
@@ -119,11 +122,13 @@ export class ContentManager {
           return musicSequences[musicOption] || ScriptManager.getRecommendedScriptSequence('music');
         } else if (primarySymptom === 'whitenoise' && whitenoiseOption) {
           const whitenoiseSequences: Record<string, string[]> = {
-            'campfire': ['whitenoise-campfire'],
             'thunder': ['whitenoise-thunder'],
             'nature': ['whitenoise-nature'],
             'wave': ['whitenoise-wave'],
             'waterdrop': ['whitenoise-waterdrop'],
+            'streamrain': ['whitenoise-streamrain'],
+            'singing bowl': ['whitenoise-singing bowl'],
+            'wind': ['whitenoise-wind'],
           };
           return whitenoiseSequences[whitenoiseOption] || ScriptManager.getRecommendedScriptSequence('whitenoise');
         }

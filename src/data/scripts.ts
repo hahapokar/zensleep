@@ -113,13 +113,6 @@ const MUSIC_SCRIPTS: Record<string, SymptomScript> = {
 
 // 白噪音助眠脚本定义
 const WHITENOISE_SCRIPTS: Record<string, SymptomScript> = {
-  'whitenoise-campfire': {
-    key: 'whitenoise-campfire',
-    title: '营火 · 温暖相伴',
-    content: ['噼里啪啦的营火声，温暖而宁静'],
-    duration: 1800, // 30分钟
-    emotion: 'warm',
-  },
   'whitenoise-thunder': {
     key: 'whitenoise-thunder',
     title: '雷声 · 大自然怒吼',
@@ -145,6 +138,27 @@ const WHITENOISE_SCRIPTS: Record<string, SymptomScript> = {
     key: 'whitenoise-waterdrop',
     title: '水滴 · 滴水穿石',
     content: ['清澈的水滴声，静心宁神'],
+    duration: 1800, // 30分钟
+    emotion: 'soothing',
+  },
+  'whitenoise-streamrain': {
+    key: 'whitenoise-streamrain',
+    title: '溪流 · 潺潺流水',
+    content: ['潺潺的溪流声，带来宁静的感觉'],
+    duration: 1800, // 30分钟
+    emotion: 'soothing',
+  },
+  'whitenoise-singing bowl': {
+      key: 'whitenoise-singing bowl',
+      title: '颂钵 · 心灵振动',
+      content: ['颂钵的声音，帮助放松身心'],
+      duration: 1800, // 30分钟
+      emotion: 'calm',
+    },
+  'whitenoise-wind': {
+    key: 'whitenoise-wind',
+    title: '风声 · 自然吹拂',
+    content: ['轻轻的风声，带来平静的感觉'],
     duration: 1800, // 30分钟
     emotion: 'soothing',
   },

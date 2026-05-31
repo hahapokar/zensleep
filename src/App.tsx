@@ -6,16 +6,18 @@ import { ContentManager, ContentConfig } from './lib/ContentManager';
 import InitialChoice from './components/InitialChoice';
 import NSDRDurationSelector from './components/NSDRDurationSelector';
 import SleepOptionSelector from './components/SleepOptionSelector';
-import MusicDurationSelector from './components/MusicDurationSelector';
+import MusicOptionSelector from './components/MusicDurationSelector';
 import WhiteNoiseOptionSelector from './components/WhiteNoiseOptionSelector';
+import DurationSelector from './components/DurationSelector';
 import ZenSleepSession from './components/ZenSleepSession';
 
 type AppStage =
   | 'INITIAL_CHOICE'
   | 'NSDR_DURATION_SELECTOR'
   | 'SLEEP_OPTION_SELECTOR'
-  | 'MUSIC_DURATION_SELECTOR'
+  | 'MUSIC_OPTION_SELECTOR'
   | 'WHITENOISE_OPTION_SELECTOR'
+  | 'DURATION_SELECTOR'
   | 'SESSION_PREP'
   | 'ZENSLEEP';
 
@@ -205,27 +207,55 @@ export default function ZenSleepApp() {
       await requestWakeLock();
       startScreenAutoOff();
 
+      // 为音乐和白噪音启用循环播放
+      if (userConfig.mode === 'music' || userConfig.mode === 'whitenoise') {
+        audioEngine.setLoop(true);
+      } else {
+        audioEngine.setLoop(false);
+      }
+
+      // 设置定时器来更新进度
       if (timerRef.current) {
         clearInterval(timerRef.current);
       }
 
+      let elapsedTime = 0;
+      const startTime = Date.now();
+
       timerRef.current = setInterval(() => {
         const total = userConfig.contentConfig?.sessionDuration || 1;
-        const currentTime = audioEngine.getCurrentTime();
-
+        
+        // 计算已播放时间（基于真实时间，而不是音频时间）
+        elapsedTime = (Date.now() - startTime) / 1000;
+        
+        // 计算进度百分比
         const progress = Math.min(
-          (currentTime / total) * 100,
+          (elapsedTime / total) * 100,
           100
         );
 
         setSessionProgress(progress);
+        
+        // 如果达到目标时长，结束会话
+        if (elapsedTime >= total) {
+          finishSession();
+        }
       }, 500);
+
+      // 为音乐和白噪音设置自动停止（使用真实时间）
+      if ((userConfig.mode === 'music' || userConfig.mode === 'whitenoise') && userConfig.duration) {
+        audioEngine.setAutoStop(userConfig.duration * 1000, () => {
+          finishSession();
+        });
+      }
 
       if (userConfig.contentConfig?.audioFile) {
         await audioEngine.playLoadedAudio();
 
-        // 只有正常播放结束才 finish
-        finishSession();
+        // 只有非循环模式（睡眠和NSDR）正常播放结束才 finish
+        if (userConfig.mode !== 'music' && userConfig.mode !== 'whitenoise') {
+          finishSession();
+        }
       }
     } catch (error) {
       console.error('[App] 播放错误:', error);
@@ -234,7 +264,7 @@ export default function ZenSleepApp() {
       setIsPlaybackStarted(false);
       setAudioError('音频播放失败，请检查网络或文件');
     }
-  }, [finishSession, isAudioReady, isPlaybackStarted, requestWakeLock, startScreenAutoOff, userConfig.contentConfig]);
+  }, [finishSession, isAudioReady, isPlaybackStarted, requestWakeLock, startScreenAutoOff, userConfig.contentConfig, userConfig.mode, userConfig.duration]);
 
   const handlePlayPauseToggle = useCallback(() => {
     if (!isPlaybackStarted) {
@@ -254,7 +284,7 @@ export default function ZenSleepApp() {
     setUserConfig({ mode });
     if (mode === 'nsdr') setAppStage('NSDR_DURATION_SELECTOR');
     else if (mode === 'sleep') setAppStage('SLEEP_OPTION_SELECTOR');
-    else if (mode === 'music') setAppStage('MUSIC_DURATION_SELECTOR');
+    else if (mode === 'music') setAppStage('MUSIC_OPTION_SELECTOR');
     else if (mode === 'whitenoise') setAppStage('WHITENOISE_OPTION_SELECTOR');
   };
 
@@ -302,31 +332,27 @@ export default function ZenSleepApp() {
     }
   };
 
-  const handleMusicDurationSelect = (musicOption: string) => {
-    const contentConfig = ContentManager.generateContentConfig('balanced', ['music'], undefined, undefined, musicOption);
-    setUserConfig(prev => ({ ...prev, musicOption, contentConfig }));
-    setAppStage('SESSION_PREP');
-    setIsAudioReady(false);
-    setAudioLoadingProgress(0);
-    
-    if (contentConfig.audioFile) {
-      audioEngine.prepareAudioFile(contentConfig.audioFile)
-        .then(() => {
-          setIsAudioReady(true);
-          setAudioLoadingProgress(100);
-          console.log('[App] 音频已准备就绪');
-        })
-        .catch((err) => {
-          console.error('[App] 音频预加载失败:', err);
-        });
-    } else {
-      setIsAudioReady(true);
-    }
+  const handleMusicOptionSelect = (musicOption: string) => {
+    setUserConfig(prev => ({ ...prev, musicOption }));
+    setAppStage('DURATION_SELECTOR');
   };
 
   const handleWhiteNoiseOptionSelect = (whitenoiseOption: string) => {
-    const contentConfig = ContentManager.generateContentConfig('balanced', ['whitenoise'], undefined, undefined, undefined, whitenoiseOption);
-    setUserConfig(prev => ({ ...prev, whitenoiseOption, contentConfig }));
+    setUserConfig(prev => ({ ...prev, whitenoiseOption }));
+    setAppStage('DURATION_SELECTOR');
+  };
+
+  const handleDurationSelect = (duration: number) => {
+    let contentConfig: ContentConfig;
+    if (userConfig.mode === 'music' && userConfig.musicOption) {
+      contentConfig = ContentManager.generateContentConfig('balanced', ['music'], duration, undefined, userConfig.musicOption);
+    } else if (userConfig.mode === 'whitenoise' && userConfig.whitenoiseOption) {
+      contentConfig = ContentManager.generateContentConfig('balanced', ['whitenoise'], duration, undefined, undefined, userConfig.whitenoiseOption);
+    } else {
+      contentConfig = ContentManager.generateContentConfig('balanced', ['sleep'], duration);
+    }
+    
+    setUserConfig(prev => ({ ...prev, duration, contentConfig }));
     setAppStage('SESSION_PREP');
     setIsAudioReady(false);
     setAudioLoadingProgress(0);
@@ -409,9 +435,9 @@ export default function ZenSleepApp() {
           />
         )}
 
-        {appStage === 'MUSIC_DURATION_SELECTOR' && (
-          <MusicDurationSelector
-            onMusicSelect={handleMusicDurationSelect}
+        {appStage === 'MUSIC_OPTION_SELECTOR' && (
+          <MusicOptionSelector
+            onMusicSelect={handleMusicOptionSelect}
             onBack={() => setAppStage('INITIAL_CHOICE')}
           />
         )}
@@ -420,6 +446,23 @@ export default function ZenSleepApp() {
           <WhiteNoiseOptionSelector
             onOptionSelect={handleWhiteNoiseOptionSelect}
             onBack={() => setAppStage('INITIAL_CHOICE')}
+          />
+        )}
+
+        {appStage === 'DURATION_SELECTOR' && (
+          <DurationSelector
+            onDurationSelect={handleDurationSelect}
+            onBack={() => {
+              // 根据模式返回上一级
+              if (userConfig.mode === 'music') {
+                setAppStage('MUSIC_OPTION_SELECTOR');
+              } else if (userConfig.mode === 'whitenoise') {
+                setAppStage('WHITENOISE_OPTION_SELECTOR');
+              } else {
+                setAppStage('INITIAL_CHOICE');
+              }
+            }}
+            mode={userConfig.mode === 'music' ? 'music' : 'whitenoise'}
           />
         )}
 
@@ -455,6 +498,7 @@ export default function ZenSleepApp() {
                 
                 <p className="text-slate-500 text-xs leading-relaxed px-8">
                   {isAudioReady ? '音频已准备就绪，可以开始播放。' : '正在预加载音频，请稍候...'}
+                  {userConfig.mode === 'music' || userConfig.mode === 'whitenoise' ? '音频会循环播放直到您选择的时长结束。' : ''}
                   第一次播放需要时间缓存，以后即可迅速打开播放。开始后屏幕会自动熄屏。点击任意位置可重新点亮屏幕。播放结束后会自动退出程序，不需要任何操作。祝您有个好梦。
                 </p>
               </div>
