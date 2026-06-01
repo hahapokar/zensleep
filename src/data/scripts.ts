@@ -129,7 +129,7 @@ const MUSIC_SCRIPTS: Record<string, SymptomScript> = {
 const WHITENOISE_SCRIPTS: Record<string, SymptomScript> = {
   'whitenoise-thunder': {
     key: 'whitenoise-thunder',
-    title: '雷声 · 大自然怒吼',
+    title: '雷声 · 浅雷入梦',
     content: ['远处的雷声，带来安心的雨声'],
     duration: 1800, // 30分钟
     emotion: 'calm',

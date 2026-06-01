@@ -15,12 +15,10 @@ interface DurationSelectorProps {
 }
 
 const DURATION_OPTIONS: DurationOption[] = [
-  { id: 10, label: '10分钟', description: '快速放松或小憩' },
-  { id: 20, label: '20分钟', description: '中等时长的放松' },
   { id: 30, label: '30分钟', description: '标准助眠时长' },
-  { id: 40, label: '40分钟', description: '更长的放松时间' },
-  { id: 50, label: '50分钟', description: '深度放松体验' },
-  { id: 60, label: '60分钟', description: '完整一小时的放松' },
+  { id: 60, label: '60分钟', description: '完整一小时放松' },
+  { id: 90, label: '90分钟', description: '深度睡眠体验' },
+  { id: 120, label: '120分钟', description: '两小时深度放松' },
 ];
 
 export default function DurationSelector({
@@ -125,7 +123,7 @@ export default function DurationSelector({
 
           <div className="p-4 rounded-xl bg-slate-800/50 border-l-2 border-emerald-400">
             <p className="text-slate-300 text-xs leading-relaxed">
-              💡 提示：音频会循环播放直到您选择的时长结束。例如选择40分钟，音频将播放30分钟后自动循环，直到40分钟结束时停止。
+              💡 提示：音频会循环播放直到您选择的时长结束。例如选择90分钟，音频将播放30分钟后自动循环，直到90分钟结束时停止。
             </p>
           </div>
         </motion.div>

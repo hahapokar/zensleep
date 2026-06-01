@@ -165,10 +165,11 @@ export default function ZenSleepSession({
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: 20 }}
-                className="absolute bottom-0 left-0 right-0 p-10 pb-16 space-y-4"
+                className="absolute bottom-0 left-0 right-0 p-6 pb-12 space-y-4"
                 onClick={(e) => e.stopPropagation()}
               >
-                <div className="w-full">
+                {/* 进度条容器 */}
+                <div className="w-full space-y-2">
                   <input
                     type="range"
                     min={0}
@@ -178,8 +179,39 @@ export default function ZenSleepSession({
                     onChange={handleSeekChange}
                     onMouseDown={handleSeekMouseDown}
                     onTouchStart={handleSeekTouchStart}
-                    className="w-full h-1 bg-slate-800 rounded-full appearance-none cursor-pointer accent-emerald-500"
+                    onTouchMove={(e) => e.stopPropagation()}
+                    className="w-full h-2 bg-slate-800 rounded-full cursor-pointer"
+                    style={{
+                      WebkitAppearance: 'none',
+                      appearance: 'none',
+                      background: `linear-gradient(to right, rgb(16, 185, 129) 0%, rgb(16, 185, 129) ${currentProgress}%, rgb(30, 41, 59) ${currentProgress}%, rgb(30, 41, 59) 100%)`
+                    }}
                   />
+                  
+                  <style>{`
+                    input[type="range"]::-webkit-slider-thumb {
+                      -webkit-appearance: none;
+                      appearance: none;
+                      width: 16px;
+                      height: 16px;
+                      border-radius: 50%;
+                      background: rgb(16, 185, 129);
+                      cursor: pointer;
+                      border: 2px solid rgb(30, 41, 59);
+                      transition: transform 0.2s;
+                    }
+                    input[type="range"]::-webkit-slider-thumb:hover {
+                      transform: scale(1.2);
+                    }
+                    input[type="range"]::-moz-range-thumb {
+                      width: 16px;
+                      height: 16px;
+                      border-radius: 50%;
+                      background: rgb(16, 185, 129);
+                      cursor: pointer;
+                      border: 2px solid rgb(30, 41, 59);
+                    }
+                  `}</style>
                 </div>
                 
                 <div className="flex justify-center text-slate-500 font-mono text-xs tracking-tighter">
@@ -188,7 +220,7 @@ export default function ZenSleepSession({
                   <span>{formatTime(displayTotal)}</span>
                 </div>
 
-                <div className="flex items-center gap-3 pt-4">
+                <div className="flex items-center gap-3 pt-2">
                   <span className="text-slate-500 text-xs">🔊</span>
                   <input
                     type="range"
@@ -199,8 +231,11 @@ export default function ZenSleepSession({
                     onChange={handleVolumeChange}
                     onMouseDown={handleSeekMouseDown}
                     onTouchStart={handleSeekTouchStart}
-                    className="flex-1 h-1 bg-slate-800 rounded-full appearance-none cursor-pointer accent-emerald-500"
+                    onTouchMove={(e) => e.stopPropagation()}
+                    className="flex-1 h-2 bg-slate-800 rounded-full cursor-pointer"
                     style={{
+                      WebkitAppearance: 'none',
+                      appearance: 'none',
                       background: `linear-gradient(to right, rgb(16, 185, 129) 0%, rgb(16, 185, 129) ${volume * 100}%, rgb(30, 41, 59) ${volume * 100}%, rgb(30, 41, 59) 100%)`
                     }}
                   />

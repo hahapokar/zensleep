@@ -12,7 +12,7 @@ interface WhiteNoiseOption {
 const WHITENOISE_OPTIONS: WhiteNoiseOption[] = [
   {
     id: 'thunder',
-    name: '雷声 · 自然怒吼',
+    name: '雷声 · 浅雷如梦',
     description: '远处的雷声，伴着雨声，带来宁静和安全感',
     icon: <Zap size={20} />,
   },
@@ -96,10 +96,10 @@ export default function WhiteNoiseOptionSelector({
         >
           <div>
             <h1 className="text-2xl font-light text-slate-100 mb-1">
-              选择白噪音模式
+              选择粉红噪音模式
             </h1>
             <p className="text-slate-400 text-xs">
-              根据您的喜好选择适合的白噪音来帮助您入睡
+              根据您的喜好选择适合的粉红噪音来帮助您入睡
             </p>
           </div>
 
