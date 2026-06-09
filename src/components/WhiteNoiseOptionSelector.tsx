@@ -133,8 +133,8 @@ export default function WhiteNoiseOptionSelector({
                   </div>
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 mb-0.5">
-                      <span className={selectedOption === option.id ? 'text-emerald-400' : 'text-slate-500'}>
-                        {React.cloneElement(option.icon as React.ReactElement, { size: 16 })}
+                      <span className={`${selectedOption === option.id ? 'text-emerald-400' : 'text-slate-500'} [&_svg]:w-4 [&_svg]:h-4`}>
+                        {option.icon}
                       </span>
                       <h3
                         className={`font-medium text-sm leading-tight ${
@@ -157,7 +157,7 @@ export default function WhiteNoiseOptionSelector({
 
           <div className="p-3 rounded-lg bg-slate-800/50 border-l-2 border-emerald-400">
             <p className="text-slate-300 text-xs">
-              💡 提示：白噪音可以帮助屏蔽环境噪音，创造一个宁静的睡眠环境。选择您喜欢的声音开始吧！
+              💡 提示：粉红噪音可以帮助屏蔽环境噪音，创造一个宁静的睡眠环境。选择您喜欢的声音开始吧！
             </p>
           </div>
         </motion.div>

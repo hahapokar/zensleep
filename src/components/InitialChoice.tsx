@@ -38,37 +38,11 @@ export default function InitialChoice({ onModeSelect }: InitialChoiceProps) {
 
         {/* 模式选择 */}
         <div className="w-full space-y-2">
-          {/* NSDR 非睡眠放松 */}
-          <motion.button
-            initial={{ opacity: 0, x: -20 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ duration: 0.5, delay: 0.4 }}
-            whileHover={{ scale: 1.02 }}
-            whileTap={{ scale: 0.98 }}
-            onClick={() => handleModeSelect('nsdr')}
-            className={`w-full p-3 rounded-lg border-2 transition-all duration-300 ${
-              selectedMode === 'nsdr'
-                ? 'border-emerald-400 bg-emerald-400/10'
-                : 'border-slate-700 bg-slate-800/50 hover:border-emerald-400/50'
-            }`}
-          >
-            <div className="text-left space-y-1">
-              <h3 className="text-slate-100 font-semibold text-sm">NSDR 引导深度放松</h3>
-              <p className="text-slate-400 text-xs">
-                白天进行非睡眠深度放松练习
-              </p>
-              <div className="flex items-center gap-2 text-emerald-400 text-xs mt-1">
-                <span>开始放松</span>
-                <ArrowRight size={12} />
-              </div>
-            </div>
-          </motion.button>
-
           {/* 进入睡眠 */}
           <motion.button
             initial={{ opacity: 0, x: -20 }}
             animate={{ opacity: 1, x: 0 }}
-            transition={{ duration: 0.5, delay: 0.5 }}
+            transition={{ duration: 0.5, delay: 0.4 }}
             whileHover={{ scale: 1.02 }}
             whileTap={{ scale: 0.98 }}
             onClick={() => handleModeSelect('sleep')}
@@ -97,7 +71,7 @@ export default function InitialChoice({ onModeSelect }: InitialChoiceProps) {
           <motion.button
             initial={{ opacity: 0, x: -20 }}
             animate={{ opacity: 1, x: 0 }}
-            transition={{ duration: 0.5, delay: 0.6 }}
+            transition={{ duration: 0.5, delay: 0.5 }}
             whileHover={{ scale: 1.02 }}
             whileTap={{ scale: 0.98 }}
             onClick={() => handleModeSelect('music')}
@@ -126,7 +100,7 @@ export default function InitialChoice({ onModeSelect }: InitialChoiceProps) {
           <motion.button
             initial={{ opacity: 0, x: -20 }}
             animate={{ opacity: 1, x: 0 }}
-            transition={{ duration: 0.5, delay: 0.7 }}
+            transition={{ duration: 0.5, delay: 0.6 }}
             whileHover={{ scale: 1.02 }}
             whileTap={{ scale: 0.98 }}
             onClick={() => handleModeSelect('whitenoise')}
@@ -150,13 +124,39 @@ export default function InitialChoice({ onModeSelect }: InitialChoiceProps) {
               </div>
             </div>
           </motion.button>
+
+          {/* NSDR 非睡眠放松 */}
+          <motion.button
+            initial={{ opacity: 0, x: -20 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ duration: 0.5, delay: 0.7 }}
+            whileHover={{ scale: 1.02 }}
+            whileTap={{ scale: 0.98 }}
+            onClick={() => handleModeSelect('nsdr')}
+            className={`w-full p-3 rounded-lg border-2 transition-all duration-300 ${
+              selectedMode === 'nsdr'
+                ? 'border-emerald-400 bg-emerald-400/10'
+                : 'border-slate-700 bg-slate-800/50 hover:border-emerald-400/50'
+            }`}
+          >
+            <div className="text-left space-y-1">
+              <h3 className="text-slate-100 font-semibold text-sm">NSDR 引导深度放松</h3>
+              <p className="text-slate-400 text-xs">
+                白天进行非睡眠深度放松练习
+              </p>
+              <div className="flex items-center gap-2 text-emerald-400 text-xs mt-1">
+                <span>开始放松</span>
+                <ArrowRight size={12} />
+              </div>
+            </div>
+          </motion.button>
         </div>
 
         {/* 底部信息 */}
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
-          transition={{ duration: 0.6, delay: 0.7 }}
+          transition={{ duration: 0.6, delay: 0.8 }}
           className="text-center text-slate-500 text-xs pt-2"
         >
           <p></p>

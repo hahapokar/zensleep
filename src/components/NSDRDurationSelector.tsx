@@ -14,19 +14,19 @@ const NSDR_DURATIONS: NSDRDuration[] = [
     id: '10min',
     duration: 600,
     label: '10分钟',
-    description: '快速能量补给 - 缓解眼部疲劳，恢复精神状态',
+    description: '适用：工位小憩、工作间隙、上课 / 会议中场、赶路休息',
   },
   {
     id: '20min',
     duration: 1200,
     label: '20分钟',
-    description: '压力释放 - 降低焦虑水平，重建内心平静',
+    description: '适用：标准午休、午后犯困、脑力透支后休整',
   },
   {
     id: '30min',
     duration: 1800,
     label: '30分钟',
-    description: '深度恢复 - 完整放松周期，重塑神经连接',
+    description: '午间长休、身心疲惫、压力较大时、睡前轻度放松',
   },
 ];
 
@@ -139,7 +139,7 @@ export default function NSDRDurationSelector({
           {/* 提示 */}
           <div className="p-4 rounded-lg bg-slate-800/50 border-l-2 border-emerald-400">
             <p className="text-slate-300 text-sm">
-              💡 提示：选择适合你当前状态的时长，可根据需要灵活调整。
+              💡 提示：不同时长适配碎片化休息、午休等场景。
             </p>
           </div>
         </motion.div>
