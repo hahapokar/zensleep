@@ -37,7 +37,7 @@ export default function DurationSelector({
     }, 300);
   };
 
-  const modeLabel = mode === 'music' ? '音乐' : '白噪音';
+  const modeLabel = mode === 'music' ? '音乐' : '粉红噪音';
 
   return (
     <div className="fixed inset-0 bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 flex flex-col overflow-y-auto">

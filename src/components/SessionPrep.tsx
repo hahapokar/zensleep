@@ -22,6 +22,8 @@ interface SessionPrepProps {
   error: string | null;
   onStart: () => void;
   onBack: () => void;
+  totalBytes?: number;
+  downloadedBytes?: number;
 }
 
 export default function SessionPrep({
@@ -31,19 +33,25 @@ export default function SessionPrep({
   error,
   onStart,
   onBack,
+  totalBytes = 0,
+  downloadedBytes = 0,
 }: SessionPrepProps) {
-  const [dots, setDots] = useState('');
+  const [animatedProgress, setAnimatedProgress] = useState(0);
 
   useEffect(() => {
-    const interval = setInterval(() => {
-      setDots(prev => (prev.length >= 3 ? '' : prev + '.'));
-    }, 500);
-    return () => clearInterval(interval);
-  }, []);
+    setAnimatedProgress(loadingProgress);
+  }, [loadingProgress]);
 
   const formatDuration = (seconds: number) => {
     const mins = Math.floor(seconds / 60);
     return `${mins} 分钟`;
+  };
+
+  const formatBytes = (bytes: number) => {
+    if (bytes === 0) return '';
+    if (bytes < 1024) return `${bytes} B`;
+    if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+    return `${(bytes / 1024 / 1024).toFixed(1)} MB`;
   };
 
   const getModeLabel = () => {
@@ -55,15 +63,6 @@ export default function SessionPrep({
     return '放松';
   };
 
-  const getModeDescription = () => {
-    if (!config?.symptoms) return '准备开始您的放松体验';
-    if (config.symptoms.includes('nsdr')) return 'NSDR 非睡眠深度放松';
-    if (config.symptoms.includes('sleep')) return '睡眠引导与放松';
-    if (config.symptoms.includes('music')) return '音乐助眠与放松';
-    if (config.symptoms.includes('whitenoise')) return '白噪音助眠';
-    return '准备开始您的放松体验';
-  };
-
   return (
     <div className="fixed inset-0 bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 flex flex-col overflow-y-auto">
       <motion.div
@@ -72,7 +71,6 @@ export default function SessionPrep({
         transition={{ duration: 0.6 }}
         className="w-full max-w-2xl mx-auto p-6 py-8 flex flex-col min-h-full"
       >
-        {/* 返回按钮 */}
         <motion.button
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
@@ -83,9 +81,7 @@ export default function SessionPrep({
           <span className="text-xs">返回上一步</span>
         </motion.button>
 
-        {/* 主要内容 */}
         <div className="flex-1 flex flex-col justify-center items-center text-center space-y-8">
-          {/* 模式标签 */}
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -96,44 +92,63 @@ export default function SessionPrep({
               {getModeLabel()}
             </div>
             <h2 className="text-3xl font-light text-slate-100">
-              {getModeDescription()}
+              {config?.sessionDuration ? `正在为您准备 ${formatDuration(config.sessionDuration)} 的放松体验` : '正在为您准备放松体验'}
             </h2>
-            {config?.sessionDuration && (
-              <p className="text-slate-500 text-sm">
-                时长: {formatDuration(config.sessionDuration)}
-              </p>
-            )}
           </motion.div>
 
-          {/* 音频加载状态 */}
           {isLoading && !error && (
             <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              className="space-y-4 w-full max-w-xs"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.4, delay: 0.3 }}
+              className="w-full max-w-md space-y-6"
             >
-              <div className="flex items-center justify-center gap-2 text-slate-400">
-                <Loader2 className="w-5 h-5 animate-spin" />
-                <span className="text-sm">正在加载音频{dots}</span>
+              <div className="flex flex-col items-center gap-4">
+                <div className="relative">
+                  <div
+                    className="rounded-full border-4 border-emerald-400/20"
+                    style={{ width: 80, height: 80 }}
+                  />
+                  <motion.div
+                    animate={{ rotate: 360 }}
+                    transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
+                    className="absolute inset-0 rounded-full border-4 border-transparent border-t-emerald-400"
+                    style={{ width: 80, height: 80 }}
+                  />
+                  <span className="absolute inset-0 flex items-center justify-center text-emerald-400 font-medium text-base">
+                    {animatedProgress}%
+                  </span>
+                </div>
+
+                <div className="text-slate-200 text-lg">正在加载音频</div>
+
+                {totalBytes > 0 && (
+                  <div className="text-slate-400 text-xs">
+                    {formatBytes(downloadedBytes)} / {formatBytes(totalBytes)}
+                  </div>
+                )}
               </div>
-              
-              {/* 进度条 */}
-              <div className="w-full bg-slate-800 rounded-full h-1 overflow-hidden">
+
+              <div className="w-full bg-slate-800 rounded-full h-2 overflow-hidden">
                 <motion.div
-                  className="h-full bg-emerald-500"
+                  className="h-full bg-gradient-to-r from-emerald-500 to-emerald-400 rounded-full"
                   initial={{ width: 0 }}
-                  animate={{ width: `${loadingProgress}%` }}
-                  transition={{ duration: 0.3 }}
+                  animate={{ width: `${animatedProgress}%` }}
+                  transition={{ duration: 0.3, ease: "easeOut" }}
                 />
               </div>
-              
-              <p className="text-slate-500 text-xs text-center">
-                {loadingProgress}% - 请稍候
-              </p>
+
+              <div className="text-slate-400 text-sm">
+                <div className="flex items-center justify-center gap-2">
+                  <Loader2 className="w-3 h-3 animate-spin" />
+                  <span>
+                    {animatedProgress < 100 ? '音频下载中...' : '即将开始...'}
+                  </span>
+                </div>
+              </div>
             </motion.div>
           )}
 
-          {/* 错误提示 */}
           {error && (
             <motion.div
               initial={{ opacity: 0 }}
@@ -147,7 +162,6 @@ export default function SessionPrep({
             </motion.div>
           )}
 
-          {/* 开始按钮 */}
           {!isLoading && !error && (
             <motion.button
               initial={{ opacity: 0, y: 20 }}
@@ -164,7 +178,6 @@ export default function SessionPrep({
           )}
         </div>
 
-        {/* 底部提示 */}
         {!isLoading && !error && (
           <motion.div
             initial={{ opacity: 0 }}
@@ -173,8 +186,7 @@ export default function SessionPrep({
             className="mt-8 p-4 rounded-lg bg-slate-800/30 border-l-2 border-emerald-500"
           >
             <p className="text-slate-400 text-xs leading-relaxed">
-              💡 提示：点击开始后，请确保手机处于静音或免打扰模式，以获得最佳体验。
-              音频将循环播放直到您设定的时长结束。
+              💡 提示：点击开始后，请确保手机处于静音或免打扰模式，以获得最佳体验。音频将循环播放直到您设定的时长结束。
             </p>
           </motion.div>
         )}

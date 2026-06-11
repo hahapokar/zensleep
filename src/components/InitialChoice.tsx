@@ -96,7 +96,7 @@ export default function InitialChoice({ onModeSelect }: InitialChoiceProps) {
             </div>
           </motion.button>
 
-          {/* 白噪音 */}
+          {/* 粉红噪音 */}
           <motion.button
             initial={{ opacity: 0, x: -20 }}
             animate={{ opacity: 1, x: 0 }}

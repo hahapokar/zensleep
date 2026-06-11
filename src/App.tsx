@@ -53,6 +53,8 @@ export default function ZenSleepApp() {
   const [isAudioReady, setIsAudioReady] = useState(false);
   const [audioLoadingProgress, setAudioLoadingProgress] = useState(0);
   const [audioError, setAudioError] = useState<string | null>(null);
+  const [totalBytes, setTotalBytes] = useState(0);
+  const [downloadedBytes, setDownloadedBytes] = useState(0);
   const screenTimerRef = useRef<NodeJS.Timeout | null>(null);
   const timerRef = useRef<NodeJS.Timeout | null>(null);
   const wakeLockRef = useRef<WakeLockSentinel | null>(null);
@@ -293,6 +295,12 @@ export default function ZenSleepApp() {
     setIsPlaying(prev => !prev);
   }, [isPlaybackStarted, isPlaying, startPlayback]);
 
+  const handleAudioProgress = (progress: number, downloaded: number, total: number) => {
+    setAudioLoadingProgress(progress);
+    setDownloadedBytes(downloaded);
+    setTotalBytes(total);
+  };
+
   const handleModeSelect = (mode: 'nsdr' | 'sleep' | 'music' | 'whitenoise') => {
     setUserConfig({ mode });
     if (mode === 'nsdr') setAppStage('NSDR_DURATION_SELECTOR');
@@ -309,7 +317,7 @@ export default function ZenSleepApp() {
     setAudioLoadingProgress(0);
     
     if (contentConfig.audioFile) {
-      audioEngine.prepareAudioFile(contentConfig.audioFile)
+      audioEngine.prepareAudioFile(contentConfig.audioFile, handleAudioProgress)
         .then(() => {
           setIsAudioReady(true);
           setAudioLoadingProgress(100);
@@ -331,7 +339,7 @@ export default function ZenSleepApp() {
     setAudioLoadingProgress(0);
     
     if (contentConfig.audioFile) {
-      audioEngine.prepareAudioFile(contentConfig.audioFile)
+      audioEngine.prepareAudioFile(contentConfig.audioFile, handleAudioProgress)
         .then(() => {
           setIsAudioReady(true);
           setAudioLoadingProgress(100);
@@ -371,7 +379,7 @@ export default function ZenSleepApp() {
     setAudioLoadingProgress(0);
     
     if (contentConfig.audioFile) {
-      audioEngine.prepareAudioFile(contentConfig.audioFile)
+      audioEngine.prepareAudioFile(contentConfig.audioFile, handleAudioProgress)
         .then(() => {
           setIsAudioReady(true);
           setAudioLoadingProgress(100);
@@ -390,7 +398,7 @@ export default function ZenSleepApp() {
 
     if (userConfig.contentConfig.audioFile) {
       try {
-        await audioEngine.prepareAudioFile(userConfig.contentConfig.audioFile);
+        await audioEngine.prepareAudioFile(userConfig.contentConfig.audioFile, handleAudioProgress);
       } catch (error) {
         console.error('[App] 音频加载失败:', error);
       }
@@ -513,6 +521,8 @@ export default function ZenSleepApp() {
               config={userConfig.contentConfig}
               isLoading={!isAudioReady}
               loadingProgress={audioLoadingProgress}
+              totalBytes={totalBytes}
+              downloadedBytes={downloadedBytes}
               error={audioError}
               onStart={runSession}
               onBack={() => {

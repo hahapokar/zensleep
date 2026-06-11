@@ -125,7 +125,7 @@ const MUSIC_SCRIPTS: Record<string, SymptomScript> = {
   },
 };
 
-// 白噪音助眠脚本定义
+// 粉红噪音助眠脚本定义
 const WHITENOISE_SCRIPTS: Record<string, SymptomScript> = {
   'whitenoise-thunder': {
     key: 'whitenoise-thunder',
