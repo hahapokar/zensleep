@@ -32,7 +32,7 @@ export default function InitialChoice({ onModeSelect }: InitialChoiceProps) {
           <div className="flex justify-center mb-2">
             <Moon className="w-10 h-10 text-emerald-400" />
           </div>
-          <h1 className="text-slate-100 text-2xl font-light tracking-tight">ZenSleep</h1>
+          <h1 className="text-slate-100 text-2xl font-light tracking-tight">禅眠</h1>
           <p className="text-slate-400 text-xs tracking-widest">个性化睡眠调理系统</p>
         </motion.div>
 
